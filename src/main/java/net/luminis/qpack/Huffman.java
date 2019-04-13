@@ -14,7 +14,7 @@ public class Huffman {
     private Map<String, Integer> codeTable = new HashMap<>();
     private Map<Integer, MappedSymbol> table = new HashMap<>();
 
-    
+
     public Huffman() {
         try {
             InputStream resourceAsStream = this.getClass().getResourceAsStream("huffmancode.txt");
@@ -41,8 +41,14 @@ public class Huffman {
         while (buffer.remaining() > 0) {
             int key = (int) buffer.peek() & 0xff;
             MappedSymbol mappedSymbol = table.get(key);
-            string.append(mappedSymbol.character);
-            buffer.shift(mappedSymbol.codeLength);
+            if (mappedSymbol != null){
+                string.append(mappedSymbol.character);
+                buffer.shift(mappedSymbol.codeLength);
+            }
+            else  {
+                break;
+            }
+
         }
         return string.toString();
     }

@@ -23,4 +23,14 @@ public class HuffmanTest {
         assertThat(decoded).isEqualTo("302");
     }
 
+    @Test
+    public void decodeFourBytes() {
+        // 12345678123456781234567812345678
+        // P      j      t    r     .     eos
+        // 11010111110100010011011000101111
+        String decoded = huffman.decode(new byte[] { (byte) 0b11010111, (byte) 0b11010001, 0b00110110, 0b00101111 });
+
+        assertThat(decoded).isEqualTo("Pjtr.");
+    }
+
 }
