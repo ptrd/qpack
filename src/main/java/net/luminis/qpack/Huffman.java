@@ -11,9 +11,10 @@ import java.util.stream.IntStream;
 
 public class Huffman {
 
-    Map<String, Integer> codeTable = new HashMap<>();
-    Map<Integer, Integer> table = new HashMap<>();
+    private Map<String, Integer> codeTable = new HashMap<>();
+    private Map<Integer, MappedSymbol> table = new HashMap<>();
 
+    
     public Huffman() {
         try {
             InputStream resourceAsStream = this.getClass().getResourceAsStream("huffmancode.txt");
@@ -35,8 +36,15 @@ public class Huffman {
     }
 
     public String decode(byte[] bytes) {
-        int b = bytes[0] & 0xff;
-        return "" + ((char) (int) table.get(b));
+        StringBuffer string = new StringBuffer(bytes.length);
+        BitBuffer buffer = new BitBuffer(bytes);
+        while (buffer.remaining() > 0) {
+            int key = (int) buffer.peek() & 0xff;
+            MappedSymbol mappedSymbol = table.get(key);
+            string.append(mappedSymbol.character);
+            buffer.shift(mappedSymbol.codeLength);
+        }
+        return string.toString();
     }
 
     private void createLookupTable(int n) {
@@ -46,7 +54,7 @@ public class Huffman {
                 int codeValue = parseBits(code, code.length());
                 int codeSizeInBytes = ((n-1) / 8) + 1;
                 generateExtendedCodes(codeValue, code.length(), codeSizeInBytes)
-                        .forEach(c -> table.put(c, entry.getValue()));
+                        .forEach(c -> table.put(c, new MappedSymbol(entry.getValue(), code.length())));
             }
         });
     }
@@ -65,6 +73,17 @@ public class Huffman {
         int firstSpace = line.indexOf(" ");
         return line.substring(0, firstSpace).replaceAll("\\|", "");
 
+    }
+
+    private static class MappedSymbol {
+
+        public MappedSymbol(int character, int codeLength) {
+            this.character = (char) character;
+            this.codeLength = codeLength;
+        }
+
+        char character;
+        int codeLength;
     }
 
 }

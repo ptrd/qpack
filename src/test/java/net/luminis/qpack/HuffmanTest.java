@@ -14,4 +14,13 @@ public class HuffmanTest {
 
         assertThat(decoded).isEqualTo("X");
     }
+
+    @Test
+    public void decode302() {
+        // Taken from https://tools.ietf.org/html/rfc7541#appendix-C.6.1
+        String decoded = huffman.decode(new byte[] { 0x64, 0x02 });
+
+        assertThat(decoded).isEqualTo("302");
+    }
+
 }
