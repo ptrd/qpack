@@ -6,3 +6,5 @@ build
 
 # Ignore Intellij project files
 .idea
+out
+*.iml

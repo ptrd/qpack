@@ -38,7 +38,7 @@ public class Huffman {
     public String decode(byte[] bytes) {
         StringBuffer string = new StringBuffer(bytes.length);
         BitBuffer buffer = new BitBuffer(bytes);
-        while (buffer.remaining() > 0) {
+        while (buffer.hasRemaining()) {
             int key = (int) buffer.peek() & 0xff;
             MappedSymbol mappedSymbol = table.get(key);
             if (mappedSymbol != null){
