@@ -41,9 +41,23 @@ public class Huffman {
         while (buffer.hasRemaining()) {
             int key = (int) buffer.peek() & 0xff;
             MappedSymbol mappedSymbol = table.get(key);
-            if (mappedSymbol != null){
-                string.append(mappedSymbol.character);
-                buffer.shift(mappedSymbol.codeLength);
+            if (mappedSymbol != null) {
+                if (mappedSymbol.isPresent()) {
+                    string.append(mappedSymbol.character);
+                    buffer.shift(mappedSymbol.codeLength);
+                }
+                else {
+                    buffer.shift(8);
+                    int subKey = (int) buffer.peek() & 0xff;
+                    mappedSymbol = mappedSymbol.subTable.get(subKey);
+                    if (mappedSymbol != null) {
+                        string.append(mappedSymbol.character);
+                        buffer.shift(mappedSymbol.codeLength);
+                    }
+                    else {
+                        break;
+                    }
+                }
             }
             else  {
                 break;
@@ -62,6 +76,21 @@ public class Huffman {
                 generateExtendedCodes(codeValue, code.length(), codeSizeInBytes)
                         .forEach(c -> table.put(c, new MappedSymbol(entry.getValue(), code.length())));
             }
+            else if (code.length() <= 2*n) {
+                int primaryCode = parseBits(code, n);
+                int secondaryCode = parseBits(code.substring(n), code.length()-n);
+                MappedSymbol mapping;
+                if (table.containsKey(primaryCode)) {
+                    mapping = table.get(primaryCode);
+                }
+                else {
+                    mapping = new MappedSymbol();
+                }
+                table.put(primaryCode, mapping);
+                int codeSizeInBytes = ((n-1) / 8) + 1;
+                generateExtendedCodes(secondaryCode, code.length()-n, codeSizeInBytes)
+                        .forEach(c -> mapping.subTable.put(c, new MappedSymbol(entry.getValue(), code.length()-n)));
+            }
         });
     }
 
@@ -78,18 +107,29 @@ public class Huffman {
     private String extractBitPattern(String line) {
         int firstSpace = line.indexOf(" ");
         return line.substring(0, firstSpace).replaceAll("\\|", "");
-
     }
 
     private static class MappedSymbol {
 
+        final char character;
+        final int codeLength;
+        final Map<Integer, MappedSymbol> subTable;
+
         public MappedSymbol(int character, int codeLength) {
             this.character = (char) character;
             this.codeLength = codeLength;
+            this.subTable = null;
         }
 
-        char character;
-        int codeLength;
+        public MappedSymbol() {
+            this.character = 0;
+            this.codeLength = 0;
+            subTable = new HashMap<>();
+        }
+
+        boolean isPresent() {
+            return subTable == null;
+        }
     }
 
 }
