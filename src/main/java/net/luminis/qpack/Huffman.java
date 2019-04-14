@@ -77,8 +77,9 @@ public class Huffman {
             if (code.length() <= n) {
                 int codeValue = parseBits(code, code.length());
                 int codeSizeInBytes = ((n-1) / 8) + 1;
+                MappedSymbol mappedSymbol = new MappedSymbol(entry.getValue(), code.length());
                 generateExtendedCodes(codeValue, code.length(), codeSizeInBytes)
-                        .forEach(c -> lookupTable.put(c, new MappedSymbol(entry.getValue(), code.length())));
+                        .forEach(c -> lookupTable.put(c, mappedSymbol));
             }
             else if (code.length() <= 2*n) {
                 int primaryCode = parseBits(code, n);
@@ -89,11 +90,12 @@ public class Huffman {
                 }
                 else {
                     mapping = new MappedSymbol();
+                    lookupTable.put(primaryCode, mapping);
                 }
-                lookupTable.put(primaryCode, mapping);
                 int codeSizeInBytes = ((n-1) / 8) + 1;
+                MappedSymbol mappedSymbol = new MappedSymbol(entry.getValue(), code.length() - n);
                 generateExtendedCodes(secondaryCode, code.length()-n, codeSizeInBytes)
-                        .forEach(c -> mapping.subTable.put(c, new MappedSymbol(entry.getValue(), code.length()-n)));
+                        .forEach(c -> mapping.subTable.put(c, mappedSymbol));
             }
         });
     }
