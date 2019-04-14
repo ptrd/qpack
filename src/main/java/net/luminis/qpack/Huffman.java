@@ -11,28 +11,32 @@ import java.util.stream.IntStream;
 
 public class Huffman {
 
-    private Map<String, Integer> codeTable = new HashMap<>();
-    private Map<Integer, MappedSymbol> table = new HashMap<>();
+    private static Map<Integer, MappedSymbol> lookupTable = null;
 
 
     public Huffman() {
-        try {
-            InputStream resourceAsStream = this.getClass().getResourceAsStream("huffmancode.txt");
-            BufferedReader reader = new BufferedReader(new InputStreamReader(resourceAsStream));
+        if (lookupTable == null) {
+            lookupTable = new HashMap<>();
+            Map<String, Integer> codeTable = new HashMap<>();
+            try {
+                InputStream resourceAsStream = this.getClass().getResourceAsStream("huffmancode.txt");
+                BufferedReader reader = new BufferedReader(new InputStreamReader(resourceAsStream));
 
-            String line;
-            int index = 0;
-            line = reader.readLine();
-            while (line != null) {
-                codeTable.put(extractBitPattern(line), index);
-                index++;
+                String line;
+                int index = 0;
                 line = reader.readLine();
+                while (line != null) {
+                    codeTable.put(extractBitPattern(line), index);
+                    index++;
+                    line = reader.readLine();
+                }
+            } catch (IOException e) {
+                // Impossible when library is build correctly.
+                throw new RuntimeException("Corrupt library, missing internal resource.");
             }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
 
-        createLookupTable(8);
+            createLookupTable(codeTable, 8);
+        }
     }
 
     public String decode(byte[] bytes) {
@@ -40,7 +44,7 @@ public class Huffman {
         BitBuffer buffer = new BitBuffer(bytes);
         while (buffer.hasRemaining()) {
             int key = (int) buffer.peek() & 0xff;
-            MappedSymbol mappedSymbol = table.get(key);
+            MappedSymbol mappedSymbol = lookupTable.get(key);
             if (mappedSymbol != null) {
                 if (mappedSymbol.isPresent()) {
                     string.append(mappedSymbol.character);
@@ -67,26 +71,26 @@ public class Huffman {
         return string.toString();
     }
 
-    private void createLookupTable(int n) {
+    private void createLookupTable(Map<String, Integer> codeTable, int n) {
         codeTable.entrySet().forEach(entry -> {
             String code = entry.getKey();
             if (code.length() <= n) {
                 int codeValue = parseBits(code, code.length());
                 int codeSizeInBytes = ((n-1) / 8) + 1;
                 generateExtendedCodes(codeValue, code.length(), codeSizeInBytes)
-                        .forEach(c -> table.put(c, new MappedSymbol(entry.getValue(), code.length())));
+                        .forEach(c -> lookupTable.put(c, new MappedSymbol(entry.getValue(), code.length())));
             }
             else if (code.length() <= 2*n) {
                 int primaryCode = parseBits(code, n);
                 int secondaryCode = parseBits(code.substring(n), code.length()-n);
                 MappedSymbol mapping;
-                if (table.containsKey(primaryCode)) {
-                    mapping = table.get(primaryCode);
+                if (lookupTable.containsKey(primaryCode)) {
+                    mapping = lookupTable.get(primaryCode);
                 }
                 else {
                     mapping = new MappedSymbol();
                 }
-                table.put(primaryCode, mapping);
+                lookupTable.put(primaryCode, mapping);
                 int codeSizeInBytes = ((n-1) / 8) + 1;
                 generateExtendedCodes(secondaryCode, code.length()-n, codeSizeInBytes)
                         .forEach(c -> mapping.subTable.put(c, new MappedSymbol(entry.getValue(), code.length()-n)));
