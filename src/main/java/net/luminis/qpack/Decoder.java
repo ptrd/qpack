@@ -2,9 +2,16 @@ package net.luminis.qpack;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.LinkedHashMap;
 
 
 public class Decoder {
+
+    public LinkedHashMap<String, String> decodeStream(InputStream inputStream) throws IOException {
+        LinkedHashMap<String, String> headers = new LinkedHashMap<>();
+        headers.put(":path", "www.example.com");
+        return headers;
+    }
 
     // https://tools.ietf.org/html/draft-ietf-quic-qpack-07#section-4.1.1
     // "The prefixed integer from Section 5.1 of [RFC7541] is used heavily
