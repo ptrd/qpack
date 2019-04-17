@@ -27,9 +27,12 @@ public class Decoder {
 
         int instruction = pushbackInputStream.read();
         pushbackInputStream.unread(instruction);
-        while (instruction > 0) {
+        while (instruction > 0) {  // EOF returns -1
             Map.Entry<String, String> entry = null;
-            if ((instruction & 0xc0) == 0x40) {
+            if ((instruction & 0x80) == 0x80) {
+                entry = parseIndexedHeaderField(pushbackInputStream);
+            }
+            else if ((instruction & 0xc0) == 0x40) {
                 entry = parseLiteralHeaderFieldWithNameReference(pushbackInputStream);
             }
             else {
@@ -72,9 +75,25 @@ public class Decoder {
         return value;
     }
 
+    // https://tools.ietf.org/html/draft-ietf-quic-qpack-07#section-4.5.2
+    Map.Entry<String, String> parseIndexedHeaderField(PushbackInputStream inputStream) throws IOException {
+        byte first = (byte) inputStream.read();  // TODO: might return -1 becauseof end-of-stream
+        inputStream.unread(first);
+        boolean inStaticTable = (first & 0x40) == 0x40;
+        int index = (int) parsePrefixedInteger(6, inputStream);
+
+        if (inStaticTable) {
+            return staticTable.lookupNameValue(index);
+        }
+        else {
+            throw new RuntimeException("tbd");
+        }
+    }
+
+
     // https://tools.ietf.org/html/draft-ietf-quic-qpack-07#section-4.5.4
     Map.Entry<String, String> parseLiteralHeaderFieldWithNameReference(PushbackInputStream inputStream) throws IOException {
-        byte first = (byte) inputStream.read();
+        byte first = (byte) inputStream.read();  // TODO: might return -1 becauseof end-of-stream
         inputStream.unread(first);
         boolean inStaticTable = (first & 0x10) == 0x10;
         int nameIndex = (int) parsePrefixedInteger(4, inputStream);

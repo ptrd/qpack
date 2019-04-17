@@ -39,6 +39,14 @@ public class DecoderTest {
     }
 
     @Test
+    public void parseIndexedHeaderFieldStaticTable() throws IOException {
+        Map.Entry<String, String> entry = decoder.parseIndexedHeaderField(wrap((byte) 0xd7));  // index 23
+
+        assertThat(entry.getKey()).isEqualTo(":scheme");
+        assertThat(entry.getValue()).isEqualTo("https");
+    }
+
+    @Test
     public void parseLiteralHeaderFieldWithNameReferenceStaticTable() throws IOException {
         Map.Entry<String, String> entry = decoder.parseLiteralHeaderFieldWithNameReference(wrap((byte) 0x51, (byte) 0x81, (byte) 0x63));
 
