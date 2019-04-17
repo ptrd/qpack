@@ -58,10 +58,10 @@ public class QifTestRunner {
 
         streamIds.stream().forEach(id -> {
             ByteArrayInputStream inputStream = new ByteArrayInputStream(streamData.get(id));
-            LinkedHashMap<String, String> headers = null;
+            List<Map.Entry<String, String>> headers = null;
             try {
                 headers = decoder.decodeStream(inputStream);
-                headers.forEach((k,v) -> out.println(k + "\t" + v));
+                headers.forEach(entry -> out.println(entry.getKey() + "\t" + entry.getValue()));
             } catch (IOException e) {
                 // Impossible
             }

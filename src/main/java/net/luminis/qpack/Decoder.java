@@ -3,9 +3,7 @@ package net.luminis.qpack;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PushbackInputStream;
-import java.util.AbstractMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
 
 
 public class Decoder {
@@ -16,9 +14,9 @@ public class Decoder {
         staticTable = new StaticTable();
     }
 
-    public LinkedHashMap<String, String> decodeStream(InputStream inputStream) throws IOException {
+    public List<Map.Entry<String, String>> decodeStream(InputStream inputStream) throws IOException {
         PushbackInputStream pushbackInputStream = new PushbackInputStream(inputStream, 16);
-        LinkedHashMap<String, String> headers = new LinkedHashMap<>();
+        List<Map.Entry<String, String>> headers = new ArrayList<>();
 
         // https://tools.ietf.org/html/draft-ietf-quic-qpack-07#section-4.5.1
         // "Header Block Prefix"
@@ -41,7 +39,7 @@ public class Decoder {
             }
 
             if (entry != null) {
-                headers.put(entry.getKey(), entry.getValue());
+                headers.add(entry);
             }
             instruction = pushbackInputStream.read();
             pushbackInputStream.unread(instruction);
