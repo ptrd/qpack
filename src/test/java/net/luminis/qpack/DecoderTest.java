@@ -4,6 +4,8 @@ import org.junit.Test;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.PushbackInputStream;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -36,7 +38,16 @@ public class DecoderTest {
         assertThat(value).isEqualTo(42);
     }
 
-    private ByteArrayInputStream wrap(byte... bytes) {
-        return new ByteArrayInputStream(bytes);
+    @Test
+    public void parseLiteralHeaderFieldWithNameReferenceStaticTable() throws IOException {
+        Map.Entry<String, String> entry = decoder.parseLiteralHeaderFieldWithNameReference(wrap((byte) 0x51, (byte) 0x81, (byte) 0x63));
+
+        assertThat(entry.getKey()).isEqualTo(":path");
+        assertThat(entry.getValue()).isEqualTo("/");
     }
+
+    private PushbackInputStream wrap(byte... bytes) {
+        return new PushbackInputStream(new ByteArrayInputStream(bytes));
+    }
+
 }
