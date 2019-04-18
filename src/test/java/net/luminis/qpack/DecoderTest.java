@@ -1,5 +1,6 @@
 package net.luminis.qpack;
 
+import org.junit.Before;
 import org.junit.Test;
 
 import java.io.ByteArrayInputStream;
@@ -12,7 +13,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class DecoderTest {
 
-    private Decoder decoder = new Decoder();
+    private Decoder decoder;
+
+    @Before
+    public void initDecoder() {
+        decoder = new Decoder();
+    }
 
     @Test
     public void parseIntegerWith5bitPrefix() throws IOException {
@@ -52,6 +58,14 @@ public class DecoderTest {
 
         assertThat(entry.getKey()).isEqualTo(":path");
         assertThat(entry.getValue()).isEqualTo("/");
+    }
+
+    @Test
+    public void parseInsertWithNameReferencetoStaticTable() throws IOException {
+        decoder.decodeEncoderStream(wrap((byte) 0xc1, (byte) 0x04, (byte) 0x2f, (byte) 0x69, (byte) 0x64, (byte) 0x78));
+
+        assertThat(decoder.lookupDynamicTable(0).getKey()).isEqualTo(":path");
+        assertThat(decoder.lookupDynamicTable(0).getValue()).isEqualTo("/idx");
     }
 
     private PushbackInputStream wrap(byte... bytes) {

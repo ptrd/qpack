@@ -10,10 +10,30 @@ public class Decoder {
 
     private final Huffman huffman;
     private final StaticTable staticTable;
+    private final List<AbstractMap.Entry<String, String>> dynamicTable;
 
     public Decoder() {
         staticTable = new StaticTable();
         huffman = new Huffman();
+        dynamicTable = new ArrayList<>();
+    }
+
+    public void decodeEncoderStream(InputStream inputStream) throws IOException {
+        PushbackInputStream pushbackInputStream = new PushbackInputStream(inputStream, 16);
+        int instruction = pushbackInputStream.read();
+        pushbackInputStream.unread(instruction);
+
+        while (instruction > 0) {  // EOF returns -1
+
+            if ((instruction & 0x80) == 0x80) {
+                parseInsertWithNameReference(pushbackInputStream);
+            } else {
+                System.err.println("Error: unknown instruction " + instruction);
+            }
+
+            instruction = pushbackInputStream.read();
+            pushbackInputStream.unread(instruction);
+        }
     }
 
     public List<Map.Entry<String, String>> decodeStream(InputStream inputStream) throws IOException {
@@ -49,6 +69,27 @@ public class Decoder {
 
         return headers;
     }
+
+    // https://tools.ietf.org/html/draft-ietf-quic-qpack-07#section-4.3.1
+    void parseInsertWithNameReference(PushbackInputStream inputStream) throws IOException {
+        int first = inputStream.read();
+        inputStream.unread(first);
+
+        int index = (int) parsePrefixedInteger(6, inputStream);
+        boolean referStatic = (first & 0x40) == 0x40;
+        String name = referStatic? staticTable.lookupName(index): lookupDynamicTable(index).getKey();
+
+        int firstValueByte = inputStream.read();
+        inputStream.unread(firstValueByte);
+
+        int valueLength = (int) parsePrefixedInteger(7, inputStream);
+        byte[] raw = new byte[valueLength];
+        inputStream.read(raw);
+        boolean huffman = (firstValueByte & 0x80) == 0x80;
+        String value = huffman? new Huffman().decode(raw): new String(raw);
+        addToTable(name, value);
+    }
+
 
     // https://tools.ietf.org/html/draft-ietf-quic-qpack-07#section-4.1.1
     // "The prefixed integer from Section 5.1 of [RFC7541] is used heavily
@@ -86,7 +127,7 @@ public class Decoder {
             return staticTable.lookupNameValue(index);
         }
         else {
-            throw new RuntimeException("tbd");
+            return lookupDynamicTable(index);
         }
     }
 
@@ -111,5 +152,17 @@ public class Decoder {
         return new AbstractMap.SimpleEntry<>(name, value);
     }
 
+    Map.Entry<String, String> lookupDynamicTable(int index) {
+        if (index < dynamicTable.size()) {
+            return dynamicTable.get(index);
+        }
+        else {
+            return null;
+        }
+    }
+
+    private void addToTable(String name, String value) {
+        dynamicTable.add(new AbstractMap.SimpleEntry<>(name, value));
+    }
 
 }
