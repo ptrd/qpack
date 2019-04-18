@@ -8,10 +8,12 @@ import java.util.*;
 
 public class Decoder {
 
-    private StaticTable staticTable;
+    private final Huffman huffman;
+    private final StaticTable staticTable;
 
     public Decoder() {
         staticTable = new StaticTable();
+        huffman = new Huffman();
     }
 
     public List<Map.Entry<String, String>> decodeStream(InputStream inputStream) throws IOException {
@@ -104,7 +106,7 @@ public class Decoder {
         int valueLength = (int) parsePrefixedInteger(7, inputStream);
         byte[] rawValue = new byte[valueLength];
         inputStream.read(rawValue);  // TODO: might read less when reading from a network stream....
-        String value = huffmanEncoded? new Huffman().decode(rawValue): new String(rawValue);
+        String value = huffmanEncoded? huffman.decode(rawValue): new String(rawValue);
 
         return new AbstractMap.SimpleEntry<>(name, value);
     }
