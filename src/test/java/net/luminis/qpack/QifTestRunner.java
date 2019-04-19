@@ -10,8 +10,8 @@ import java.util.*;
 // See https://github.com/qpackers/qifs
 public class QifTestRunner {
 
-    private Map<Long, byte[]> streamData = new HashMap<>();
     private List<Long> streamIds = new ArrayList<>();
+
 
     public static void main(String[] args) throws IOException {
         if (args.length != 2) {
@@ -34,42 +34,41 @@ public class QifTestRunner {
 
         byte[] bytes = Files.readAllBytes(Path.of(args[0]));
         QifTestRunner runner = new QifTestRunner();
-        runner.parseQif(bytes);
-        runner.parseStreams(new PrintWriter(new FileWriter(qifFile)));
+        runner.parseAndProcessQif(bytes, new PrintWriter(new FileWriter(qifFile)));
+
         System.out.println("Wrote '" + qifFile + "'");
     }
 
-    private void parseQif(byte[] bytes) {
+    private void parseAndProcessQif(byte[] bytes, PrintWriter out) throws IOException {
         ByteBuffer buffer = ByteBuffer.wrap(bytes);
+        Decoder decoder = new Decoder();
 
         while (buffer.remaining() > 0) {
             long streamId = buffer.getLong();
-            streamIds.add(streamId);
             int length = buffer.getInt();
             byte[] qpackData = new byte[length];
             buffer.get(qpackData);
-            streamData.put(streamId, qpackData);
-        }
-        System.out.println("Read " + streamIds.size() + " streams");
-    }
-
-    private void parseStreams(PrintWriter out) {
-        Decoder decoder = new Decoder();
-
-        streamIds.stream().forEach(id -> {
-            ByteArrayInputStream inputStream = new ByteArrayInputStream(streamData.get(id));
-            List<Map.Entry<String, String>> headers = null;
-            try {
-                headers = decoder.decodeStream(inputStream);
-                headers.forEach(entry -> out.println(entry.getKey() + "\t" + entry.getValue()));
-            } catch (IOException e) {
-                // Impossible
+            if (streamId == 0) {
+                decoder.decodeEncoderStream(new ByteArrayInputStream(qpackData));
             }
-            out.println();
-            out.flush();
-        });
+            else {
+                streamIds.add(streamId);
+                ByteArrayInputStream inputStream = new ByteArrayInputStream(qpackData);
+                List<Map.Entry<String, String>> headers;
+                try {
+                    headers = decoder.decodeStream(inputStream);
+                    headers.forEach(entry -> out.println(entry.getKey() + "\t" + entry.getValue()));
+                } catch (IOException e) {
+                    // Impossible
+                }
 
+                out.println();
+                out.flush();
+            }
+        }
         out.close();
+
+        System.out.println("Read " + streamIds.size() + " streams");
     }
 
 }
