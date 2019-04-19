@@ -68,6 +68,16 @@ public class DecoderTest {
         assertThat(decoder.lookupDynamicTable(0).getValue()).isEqualTo("/idx");
     }
 
+    @Test
+    public void parseLiteralHeaderFieldWithoutNameReference() throws IOException {
+        Map.Entry<String, String> entry = decoder.parseLiteralHeaderFieldWithoutNameReference(
+                wrap((byte) 0x24, (byte) 0x65, (byte) 0x74, (byte) 0x61, (byte) 0x67,
+                        (byte) 0x04, (byte) 0x48, (byte) 0x66, (byte) 0x6b, (byte) 0x55));
+
+        assertThat(entry.getKey()).isEqualTo("etag");
+        assertThat(entry.getValue()).isEqualTo("HfkU");
+    }
+
     private PushbackInputStream wrap(byte... bytes) {
         return new PushbackInputStream(new ByteArrayInputStream(bytes));
     }

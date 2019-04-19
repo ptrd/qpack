@@ -55,6 +55,9 @@ public class Decoder {
             else if ((instruction & 0xc0) == 0x40) {
                 entry = parseLiteralHeaderFieldWithNameReference(pushbackInputStream);
             }
+            else if ((instruction & 0xe0) == 0x20) {
+                entry = parseLiteralHeaderFieldWithoutNameReference(pushbackInputStream);
+            }
             else {
                 System.err.println("Error: unknown instruction " + instruction);
                 break;
@@ -151,6 +154,30 @@ public class Decoder {
 
         return new AbstractMap.SimpleEntry<>(name, value);
     }
+
+    // https://tools.ietf.org/html/draft-ietf-quic-qpack-07#section-4.5.6
+    Map.Entry<String, String> parseLiteralHeaderFieldWithoutNameReference(PushbackInputStream inputStream) throws IOException {
+        byte first = (byte) inputStream.read();
+        inputStream.unread(first);
+
+        boolean huffmanEncoded = (first & 0x08) == 0x08;
+        int nameLength = (int) parsePrefixedInteger(3, inputStream);
+        byte[] rawName = new byte[nameLength];
+        inputStream.read(rawName);
+        String name = huffmanEncoded? huffman.decode(rawName): new String(rawName);
+
+        int firstValueByte = inputStream.read();
+        inputStream.unread(firstValueByte);
+
+        huffmanEncoded = (firstValueByte & 0x80) == 0x80;
+        int valueLength = (int) parsePrefixedInteger(7, inputStream);
+        byte[] rawValue = new byte[valueLength];
+        inputStream.read(rawValue);  // TODO: might read less when reading from a network stream....
+        String value = huffmanEncoded? huffman.decode(rawValue): new String(rawValue);
+
+        return new AbstractMap.SimpleEntry<>(name, value);
+    }
+
 
     Map.Entry<String, String> lookupDynamicTable(int index) {
         if (index < dynamicTable.size()) {
