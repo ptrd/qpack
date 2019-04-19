@@ -43,7 +43,7 @@ public class Decoder {
         // https://tools.ietf.org/html/draft-ietf-quic-qpack-07#section-4.5.1
         // "Header Block Prefix"
         long requiredInsertCount = parsePrefixedInteger(8, pushbackInputStream);
-        int base = inputStream.read();
+        int deltaBase = (int) parsePrefixedInteger(7, pushbackInputStream);
 
         int instruction = pushbackInputStream.read();
         pushbackInputStream.unread(instruction);
