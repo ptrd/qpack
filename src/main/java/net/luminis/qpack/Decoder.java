@@ -27,8 +27,12 @@ public class Decoder {
 
             if ((instruction & 0x80) == 0x80) {
                 parseInsertWithNameReference(pushbackInputStream);
-            } else {
-                System.err.println("Error: unknown instruction " + instruction);
+            }
+            else if ((instruction & 0xc0) == 0x40) {
+                parseInsertWithoutNameReference(pushbackInputStream);
+            }
+            else {
+                System.err.println("Error: unknown encoder instruction " + instruction);
             }
 
             instruction = pushbackInputStream.read();
@@ -86,6 +90,12 @@ public class Decoder {
         addToTable(name, value);
     }
 
+    // https://tools.ietf.org/html/draft-ietf-quic-qpack-07#section-4.3.2
+    void parseInsertWithoutNameReference(PushbackInputStream inputStream) throws IOException {
+        String name = parseStringValue(5, inputStream);
+        String value = parseStringValue(inputStream);
+        addToTable(name, value);
+    }
 
     // https://tools.ietf.org/html/draft-ietf-quic-qpack-07#section-4.1.1
     // "The prefixed integer from Section 5.1 of [RFC7541] is used heavily
@@ -172,6 +182,9 @@ public class Decoder {
         switch(prefixLength) {
             case 3:
                 huffmanFlagMask = 0x08;
+                break;
+            case 5:
+                huffmanFlagMask = 0x20;
                 break;
             default:
                 throw new RuntimeException("tbd");

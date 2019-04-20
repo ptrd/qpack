@@ -78,6 +78,17 @@ public class DecoderTest {
         assertThat(entry.getValue()).isEqualTo("HfkU");
     }
 
+    @Test
+    public void parseInsertWithoutNameReference() throws IOException {
+        decoder.parseInsertWithoutNameReference(wrap(
+                (byte) 0x44, (byte) 0x65, (byte) 0x74, (byte) 0x61, (byte) 0x67,
+                (byte) 0x04, (byte) 0x59, (byte) 0x72, (byte) 0x67, (byte) 0x3d
+        ));
+
+        assertThat(decoder.lookupDynamicTable(0).getKey()).isEqualTo("etag");
+        assertThat(decoder.lookupDynamicTable(0).getValue()).isEqualTo("Yrg=");
+    }
+
     private PushbackInputStream wrap(byte... bytes) {
         return new PushbackInputStream(new ByteArrayInputStream(bytes));
     }
