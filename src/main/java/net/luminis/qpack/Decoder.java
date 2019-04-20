@@ -32,7 +32,7 @@ public class Decoder {
                 parseInsertWithoutNameReference(pushbackInputStream);
             }
             else {
-                System.err.println("Error: unknown encoder instruction " + instruction);
+                throw new NotYetImplementedException("Error: unknown instruction in encoder stream: " + instruction);
             }
 
             instruction = pushbackInputStream.read();
@@ -63,8 +63,7 @@ public class Decoder {
                 entry = parseLiteralHeaderFieldWithoutNameReference(pushbackInputStream);
             }
             else {
-                System.err.println("Error: unknown instruction " + instruction);
-                break;
+                throw new NotYetImplementedException("Error: unknown instruction: " + instruction);
             }
 
             if (entry != null) {
@@ -144,6 +143,9 @@ public class Decoder {
         inputStream.unread(first);
         boolean inStaticTable = (first & 0x10) == 0x10;
         int nameIndex = (int) parsePrefixedInteger(4, inputStream);
+        if (! inStaticTable) {
+            throw new NotYetImplementedException("non static ref in parseLiteralHeaderFieldWithNameReference");
+        }
         String name = inStaticTable? staticTable.lookupName(nameIndex): "<tbd>";
 
         String value = parseStringValue(inputStream);
@@ -187,7 +189,7 @@ public class Decoder {
                 huffmanFlagMask = 0x20;
                 break;
             default:
-                throw new RuntimeException("tbd");
+                throw new NotYetImplementedException("no huffman flag mask for prefix " + prefixLength);
         }
 
         int firstByte = inputStream.read();

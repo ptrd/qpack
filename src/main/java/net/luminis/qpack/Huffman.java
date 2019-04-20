@@ -59,12 +59,18 @@ public class Huffman {
                         buffer.shift(mappedSymbol.codeLength);
                     }
                     else {
-                        break;
+                        if (subKey == 0xff) {
+                            // All ones -> EOS (end of string literal)
+                            break;
+                        }
+                        else {
+                            throw new NotYetImplementedException("3 level huffman lookup not yet supported");
+                        }
                     }
                 }
             }
             else  {
-                break;
+                throw new IllegalStateException();  // Must be programming error
             }
 
         }

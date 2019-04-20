@@ -3,6 +3,7 @@ package net.luminis.qpack;
 import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class HuffmanTest {
 
@@ -97,4 +98,12 @@ public class HuffmanTest {
         assertThat(decoded).isEqualTo("({[^#$+<?@!>\"'`~]})");
     }
 
+    @Test
+    public void decodeThreeByteHuffmanCode() {
+        assertThatThrownBy(
+                () ->
+                    // '\' -> 11111111|11111110|000
+                    huffman.decode(new byte[] { (byte) 0b11111111, (byte) 0b11111110, (byte) 0b00011111 }))
+                .isInstanceOf(NotYetImplementedException.class);
+    }
 }
