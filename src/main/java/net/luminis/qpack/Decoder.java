@@ -82,14 +82,7 @@ public class Decoder {
         boolean referStatic = (first & 0x40) == 0x40;
         String name = referStatic? staticTable.lookupName(index): lookupDynamicTable(index).getKey();
 
-        int firstValueByte = inputStream.read();
-        inputStream.unread(firstValueByte);
-
-        int valueLength = (int) parsePrefixedInteger(7, inputStream);
-        byte[] raw = new byte[valueLength];
-        inputStream.read(raw);
-        boolean huffman = (firstValueByte & 0x80) == 0x80;
-        String value = huffman? new Huffman().decode(raw): new String(raw);
+        String value = parseStringValue(inputStream);
         addToTable(name, value);
     }
 
@@ -143,41 +136,17 @@ public class Decoder {
         int nameIndex = (int) parsePrefixedInteger(4, inputStream);
         String name = inStaticTable? staticTable.lookupName(nameIndex): "<tbd>";
 
-        int firstValueByte = inputStream.read();
-        inputStream.unread(firstValueByte);
-
-        boolean huffmanEncoded = (firstValueByte & 0x80) == 0x80;
-        int valueLength = (int) parsePrefixedInteger(7, inputStream);
-        byte[] rawValue = new byte[valueLength];
-        inputStream.read(rawValue);  // TODO: might read less when reading from a network stream....
-        String value = huffmanEncoded? huffman.decode(rawValue): new String(rawValue);
+        String value = parseStringValue(inputStream);
 
         return new AbstractMap.SimpleEntry<>(name, value);
     }
 
     // https://tools.ietf.org/html/draft-ietf-quic-qpack-07#section-4.5.6
     Map.Entry<String, String> parseLiteralHeaderFieldWithoutNameReference(PushbackInputStream inputStream) throws IOException {
-        byte first = (byte) inputStream.read();
-        inputStream.unread(first);
-
-        boolean huffmanEncoded = (first & 0x08) == 0x08;
-        int nameLength = (int) parsePrefixedInteger(3, inputStream);
-        byte[] rawName = new byte[nameLength];
-        inputStream.read(rawName);
-        String name = huffmanEncoded? huffman.decode(rawName): new String(rawName);
-
-        int firstValueByte = inputStream.read();
-        inputStream.unread(firstValueByte);
-
-        huffmanEncoded = (firstValueByte & 0x80) == 0x80;
-        int valueLength = (int) parsePrefixedInteger(7, inputStream);
-        byte[] rawValue = new byte[valueLength];
-        inputStream.read(rawValue);  // TODO: might read less when reading from a network stream....
-        String value = huffmanEncoded? huffman.decode(rawValue): new String(rawValue);
-
+        String name = parseStringValue(3, inputStream);
+        String value = parseStringValue(inputStream);
         return new AbstractMap.SimpleEntry<>(name, value);
     }
-
 
     Map.Entry<String, String> lookupDynamicTable(int index) {
         if (index < dynamicTable.size()) {
@@ -186,6 +155,35 @@ public class Decoder {
         else {
             return null;
         }
+    }
+
+    private String parseStringValue(PushbackInputStream inputStream) throws IOException {
+        int firstByte = inputStream.read();
+        inputStream.unread(firstByte);
+        boolean huffmanEncoded = (firstByte & 0x80) == 0x80;
+        int valueLength = (int) parsePrefixedInteger(7, inputStream);
+        byte[] rawValue = new byte[valueLength];
+        inputStream.read(rawValue);  // TODO: might read less when reading from a network stream....
+        return huffmanEncoded? huffman.decode(rawValue): new String(rawValue);
+    }
+
+    private String parseStringValue(int prefixLength, PushbackInputStream inputStream) throws IOException {
+        int huffmanFlagMask;
+        switch(prefixLength) {
+            case 3:
+                huffmanFlagMask = 0x08;
+                break;
+            default:
+                throw new RuntimeException("tbd");
+        }
+
+        int firstByte = inputStream.read();
+        inputStream.unread(firstByte);
+        boolean huffmanEncoded = (firstByte & huffmanFlagMask) == huffmanFlagMask;
+        int length = (int) parsePrefixedInteger(prefixLength, inputStream);
+        byte[] rawBytes = new byte[length];
+        inputStream.read(rawBytes);  // TODO: might read less when reading from a network stream....
+        return huffmanEncoded? huffman.decode(rawBytes): new String(rawBytes);
     }
 
     private void addToTable(String name, String value) {
