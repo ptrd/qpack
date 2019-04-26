@@ -91,4 +91,18 @@ public class StaticTableTest {
                 .isInstanceOf(HttpQPackDecompressionFailedException.class);
     }
 
+    @Test
+    public void testFindByNameAndValueMatchesSingleItem() {
+        assertThat(staticTable.findByNameAndValue("age", "0")).isEqualTo(2);
+    }
+
+    @Test
+    public void testFindByNameAndValueMatchesMultipleNames() {
+        assertThat(staticTable.findByNameAndValue(":method", "OPTIONS")).isEqualTo(19);
+    }
+
+    @Test
+    public void testFindByNameAndValueMatchesNoValue() {
+        assertThat(staticTable.findByNameAndValue(":status", "201")).isEqualTo(24);
+    }
 }

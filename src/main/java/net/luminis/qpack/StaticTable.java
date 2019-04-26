@@ -5,7 +5,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.AbstractMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -17,7 +19,7 @@ import java.util.regex.Pattern;
 public class StaticTable {
 
     private String[] names = new String[100];
-    private String[]  values = new String[100];
+    private String[] values = new String[100];
 
     StaticTable() {
         Pattern empty =        Pattern.compile("\\|\\s+\\|\\s+\\|\\s+\\|");
@@ -81,6 +83,23 @@ public class StaticTable {
             throw new HttpQPackDecompressionFailedException();
         }
         return result;
+    }
+
+    public int findByNameAndValue(String name, String value) {
+        Objects.requireNonNull(name);
+        Objects.requireNonNull(value);
+        int firstMatch = -1;
+        for (int i = 0; i < names.length; i++) {
+            if (name.equals(names[i])) {
+                if (firstMatch < 0) {
+                    firstMatch = i;
+                }
+                if (value.equals(values[i])) {
+                    return i;
+                }
+            }
+        }
+        return firstMatch;
     }
 
     public Map.Entry<String, String> lookupNameValue(int index) {
