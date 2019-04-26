@@ -23,7 +23,7 @@ public class Decoder {
         int instruction = pushbackInputStream.read();
         pushbackInputStream.unread(instruction);
 
-        while (instruction > 0) {  // EOF returns -1
+        while (instruction >= 0) {  // EOF returns -1
 
             if ((instruction & 0x80) == 0x80) {
                 parseInsertWithNameReference(pushbackInputStream);
@@ -51,7 +51,7 @@ public class Decoder {
 
         int instruction = pushbackInputStream.read();
         pushbackInputStream.unread(instruction);
-        while (instruction > 0) {  // EOF returns -1
+        while (instruction >= 0) {  // EOF returns -1
             Map.Entry<String, String> entry = null;
             if ((instruction & 0x80) == 0x80) {
                 entry = parseIndexedHeaderField(pushbackInputStream);
