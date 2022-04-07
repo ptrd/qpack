@@ -26,6 +26,9 @@ public class QifTestRunner {
         }
 
         File qifFile = new File(args[1]);
+        if (!qifFile.getParentFile().exists()) {
+            qifFile.getParentFile().mkdir();
+        }
         qifFile.createNewFile();
         if (!qifFile.canWrite()) {
             System.err.println("Cannot write file '" + qifFile.getAbsolutePath() + "'");
