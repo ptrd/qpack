@@ -55,4 +55,8 @@ public class BitBuffer {
     public boolean hasRemaining() {
         return bitsInHead > 0;
     }
+
+    public int remaining() {
+        return bitsInHead > 0? bitsInHead: 0;
+    }
 }
