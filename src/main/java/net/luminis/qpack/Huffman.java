@@ -21,12 +21,13 @@ import java.util.stream.IntStream;
  */
 public class Huffman {
 
-    private static Map<Integer, MappedSymbol> lookupTable = null;
+    private static MappedSymbol[] lookupTable = null;
     private static final int KEY_SIZE = 8;
+    public static final int TABLE_SIZE = (int) Math.pow(2, KEY_SIZE);
 
     public Huffman() {
         if (lookupTable == null) {
-            lookupTable = new HashMap<>();
+            lookupTable = new MappedSymbol[TABLE_SIZE];
             Map<String, Integer> codeTable = new HashMap<>();
             try {
                 InputStream resourceAsStream = this.getClass().getResourceAsStream("huffmancode.txt");
@@ -74,9 +75,9 @@ public class Huffman {
      * @param buffer  the buffer containing the bits that will be decoded.
      * @return  the symbol represented by the code or null if there is no match
      */
-    private MappedSymbol lookup(Map<Integer, MappedSymbol> table, BitBuffer buffer) {
+    private MappedSymbol lookup(MappedSymbol[] table, BitBuffer buffer) {
         int key = (int) buffer.peek() & 0xff;
-        MappedSymbol mappedSymbol = table.get(key);
+        MappedSymbol mappedSymbol = table[key];
         if (mappedSymbol.isPresent()) {
             buffer.shift(mappedSymbol.codeLength);
             return mappedSymbol;
@@ -103,20 +104,20 @@ public class Huffman {
      * @param code   the code to add as a String of 1's and 0's
      * @param symbolValue  the symbol symbolValue to add (integer representation)
      */
-    private void addToLookupTable(Map<Integer, MappedSymbol> table, String code, int symbolValue) {
+    private void addToLookupTable(MappedSymbol[] table, String code, int symbolValue) {
         if (code.length() <= KEY_SIZE) {
             int codeValue = parseBits(code, code.length());
             MappedSymbol mappedSymbol = new MappedSymbol(symbolValue, code.length());
             generateExtendedCodes(codeValue, code.length())
-                    .forEach(c -> table.put(c, mappedSymbol));
+                    .forEach(c -> table[c] = mappedSymbol);
         }
         else {
             int prefixCode = parseBits(code, KEY_SIZE);
             String suffix = code.substring(KEY_SIZE);
-            if (! table.containsKey(prefixCode)) {
-                table.put(prefixCode, new MappedSymbol());
+            if (table[prefixCode] == null) {
+                table[prefixCode] = new MappedSymbol();
             }
-            addToLookupTable(table.get(prefixCode).subTable, suffix, symbolValue);
+            addToLookupTable(table[prefixCode].subTable, suffix, symbolValue);
         }
     }
 
@@ -139,7 +140,7 @@ public class Huffman {
 
         final char character;
         final int codeLength;
-        final Map<Integer, MappedSymbol> subTable;
+        final MappedSymbol[] subTable;
 
         public MappedSymbol(int character, int codeLength) {
             this.character = (char) character;
@@ -150,7 +151,7 @@ public class Huffman {
         public MappedSymbol() {
             this.character = 0;
             this.codeLength = 0;
-            subTable = new HashMap<>();
+            subTable = new MappedSymbol[(int) Math.pow(2, KEY_SIZE)];;
         }
 
         boolean isPresent() {
