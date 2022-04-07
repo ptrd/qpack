@@ -21,13 +21,13 @@ import java.util.stream.IntStream;
  */
 public class Huffman {
 
-    private static MappedSymbol[] lookupTable = null;
+    private static TableEntry[] lookupTable = null;
     private static final int KEY_SIZE = 8;
     public static final int TABLE_SIZE = (int) Math.pow(2, KEY_SIZE);
 
     public Huffman() {
         if (lookupTable == null) {
-            lookupTable = new MappedSymbol[TABLE_SIZE];
+            lookupTable = new TableEntry[TABLE_SIZE];
             Map<String, Integer> codeTable = new HashMap<>();
             try {
                 InputStream resourceAsStream = this.getClass().getResourceAsStream("huffmancode.txt");
@@ -61,7 +61,7 @@ public class Huffman {
         StringBuffer string = new StringBuffer(bytes.length);
         BitBuffer buffer = new BitBuffer(bytes);
         while (buffer.hasRemaining()) {
-            MappedSymbol symbol = lookup(lookupTable, buffer);
+            TableEntry symbol = lookup(lookupTable, buffer);
             if (symbol != null) {
                 string.append(symbol.character);
             }
@@ -75,10 +75,10 @@ public class Huffman {
      * @param buffer  the buffer containing the bits that will be decoded.
      * @return  the symbol represented by the code or null if there is no match
      */
-    private MappedSymbol lookup(MappedSymbol[] table, BitBuffer buffer) {
+    private TableEntry lookup(TableEntry[] table, BitBuffer buffer) {
         int key = (int) buffer.peek() & 0xff;
-        MappedSymbol mappedSymbol = table[key];
-        if (mappedSymbol.isPresent()) {
+        TableEntry mappedSymbol = table[key];
+        if (mappedSymbol.isSymbol()) {
             buffer.shift(mappedSymbol.codeLength);
             return mappedSymbol;
         }
@@ -104,24 +104,32 @@ public class Huffman {
      * @param code   the code to add as a String of 1's and 0's
      * @param symbolValue  the symbol symbolValue to add (integer representation)
      */
-    private void addToLookupTable(MappedSymbol[] table, String code, int symbolValue) {
+    private void addToLookupTable(TableEntry[] table, String code, int symbolValue) {
         if (code.length() <= KEY_SIZE) {
             int codeValue = parseBits(code, code.length());
-            MappedSymbol mappedSymbol = new MappedSymbol(symbolValue, code.length());
-            generateExtendedCodes(codeValue, code.length())
-                    .forEach(c -> table[c] = mappedSymbol);
+            TableEntry mappedSymbol = new TableEntry(symbolValue, code.length());
+            generateCodeKeys(codeValue, code.length())
+                    .forEach(key -> table[key] = mappedSymbol);
         }
         else {
             int prefixCode = parseBits(code, KEY_SIZE);
             String suffix = code.substring(KEY_SIZE);
             if (table[prefixCode] == null) {
-                table[prefixCode] = new MappedSymbol();
+                table[prefixCode] = new TableEntry();
             }
             addToLookupTable(table[prefixCode].subTable, suffix, symbolValue);
         }
     }
 
-    private IntStream generateExtendedCodes(int codeValue, int bits) {
+    /**
+     * Generates keys for the given code. As a code can be less than 8 bits, keys must be generated for all values for
+     * the LSB's that are not part of the key. For example, if the code is 0b001100 (6 bits), keys are generated for all
+     * values of the 2 least significant bits: 0b00110000, 0b00110001, 0b00110010, 0b00110011
+     * @param codeValue
+     * @param bits
+     * @return
+     */
+    private IntStream generateCodeKeys(int codeValue, int bits) {
         int baseValue = codeValue << (KEY_SIZE - bits);
         int maxAddition = (int) Math.pow(2, KEY_SIZE - bits);
         return IntStream.range(0, maxAddition).map(addition -> baseValue | addition);
@@ -136,25 +144,25 @@ public class Huffman {
         return line.substring(0, firstSpace).replaceAll("\\|", "");
     }
 
-    private static class MappedSymbol {
+    private static class TableEntry {
 
         final char character;
         final int codeLength;
-        final MappedSymbol[] subTable;
+        final TableEntry[] subTable;
 
-        public MappedSymbol(int character, int codeLength) {
+        public TableEntry(int character, int codeLength) {
             this.character = (char) character;
             this.codeLength = codeLength;
             this.subTable = null;
         }
 
-        public MappedSymbol() {
+        public TableEntry() {
             this.character = 0;
             this.codeLength = 0;
-            subTable = new MappedSymbol[(int) Math.pow(2, KEY_SIZE)];;
+            subTable = new TableEntry[(int) Math.pow(2, KEY_SIZE)];;
         }
 
-        boolean isPresent() {
+        boolean isSymbol() {
             return subTable == null;
         }
     }
