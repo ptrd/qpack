@@ -2,7 +2,10 @@ package net.luminis.qpack;
 
 import org.junit.Test;
 
+import java.nio.charset.StandardCharsets;
+
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.offset;
 
 public class HuffmanTest {
 
@@ -121,5 +124,49 @@ public class HuffmanTest {
         assertThat(decoded.charAt(1)).isEqualTo((char) 224);
         assertThat(decoded.charAt(2)).isEqualTo((char) 231);
         assertThat(decoded.charAt(3)).isEqualTo((char) 254);
+    }
+
+    /**
+     * QPACK is character encoding agnostic: it operates on opaque octets.
+     * For convenience, the decode method returns String (because Decoder provides Strings).
+     * This test shows that characters outside the ASCII range are left unchanged.
+     * However, to get the unchanged bytes out of the string, getBytes(StandardCharsets.ISO_8859_1) must be used.
+     */
+    @Test
+    public void testUnicodeTearsOfJoySurvivesDecoding() {
+        // 240 159 152 130   UTF-8 encoded tears-of-joy emoji
+        String decoded = huffman.decode(
+                new byte[] { (byte) 0b11111111, (byte) 0b11111111, (byte) 0b11111010, (byte) 0b11_111111,
+                        (byte) 0b11111111, (byte) 0b11111011, (byte) 0b11_111111, (byte) 0b11111111,
+                        (byte) 0b11110010, (byte) 0b0_1111111, (byte) 0b11111111, (byte) 0b00111_111 });
+
+        assertThat(decoded.charAt(0)).isEqualTo((char) 240);
+        assertThat(decoded.charAt(1)).isEqualTo((char) 159);
+        assertThat(decoded.charAt(2)).isEqualTo((char) 152);
+        assertThat(decoded.charAt(3)).isEqualTo((char) 130);
+
+        byte[] tearsOfJoyUtf8 = new byte[] { (byte) 0xf0, (byte) 0x9f, (byte) 0x98, (byte) 0x82 };
+        assertThat(decoded.getBytes(StandardCharsets.ISO_8859_1)).isEqualTo(tearsOfJoyUtf8);
+
+        // As we know the original tears of joy was (character) encoded with UTF-8
+        String reinterpreted = new String(decoded.getBytes(StandardCharsets.ISO_8859_1), StandardCharsets.UTF_8);
+        // UTF-16 encoding of tears-of-joy is D83D DE02
+        assertThat(reinterpreted.length()).isEqualTo(2);
+        assertThat(reinterpreted.charAt(0)).isEqualTo((char) 0xd83d);
+        assertThat(reinterpreted.charAt(1)).isEqualTo((char) 0xde02);
+    }
+
+    /**
+     * Proofs that String.getBytes(StandardCharsets.ISO_8859_1) returns the raw unchanged character values.
+     */
+    @Test
+    public void testISO8859_1DecodingReturnsRawCharValue() {
+        for (int i = 0; i < 256; i++) {
+            char c = (char) i;
+            String s = new StringBuffer().append(c).toString();
+            byte[] bytes = s.getBytes(StandardCharsets.ISO_8859_1);
+            assertThat(bytes.length).isEqualTo(1);
+            assertThat(Byte.toUnsignedInt(bytes[0])).isEqualTo(i);
+        }
     }
 }
