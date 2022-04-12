@@ -3,6 +3,7 @@ package net.luminis.qpack;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PushbackInputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 
@@ -176,7 +177,7 @@ public class Decoder {
         int valueLength = (int) parsePrefixedInteger(7, inputStream);
         byte[] rawValue = new byte[valueLength];
         inputStream.read(rawValue);  // TODO: might read less when reading from a network stream....
-        return huffmanEncoded? huffman.decode(rawValue): new String(rawValue);
+        return huffmanEncoded? huffman.decode(rawValue): new String(rawValue, StandardCharsets.ISO_8859_1);
     }
 
     private String parseStringValue(int prefixLength, PushbackInputStream inputStream) throws IOException {
@@ -198,7 +199,7 @@ public class Decoder {
         int length = (int) parsePrefixedInteger(prefixLength, inputStream);
         byte[] rawBytes = new byte[length];
         inputStream.read(rawBytes);  // TODO: might read less when reading from a network stream....
-        return huffmanEncoded? huffman.decode(rawBytes): new String(rawBytes);
+        return huffmanEncoded? huffman.decode(rawBytes): new String(rawBytes, StandardCharsets.ISO_8859_1);
     }
 
     private void addToTable(String name, String value) {

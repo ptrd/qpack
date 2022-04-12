@@ -79,6 +79,19 @@ public class DecoderTest {
     }
 
     @Test
+    public void parseNonAsciiCharInLiteralHeaderFieldWithoutNameReference() throws IOException {
+        Map.Entry<String, String> entry = decoder.parseLiteralHeaderFieldWithoutNameReference(
+                wrap((byte) 0x24, (byte) 0x6e, (byte) 0x61, (byte) 0x6d, (byte) 0x65,
+                        (byte) 0x04, (byte) 0x42, (byte) 0xf6, (byte) 0x72, (byte) 0x6e));
+
+        assertThat(entry.getKey()).isEqualTo("name");
+        String value = entry.getValue();
+        assertThat(value.charAt(0)).isEqualTo('B');
+        assertThat((int) value.charAt(1)).isEqualTo(0xf6);
+        assertThat(value.charAt(1)).isEqualTo('ö');   // This works because in UTF-16, 246 is also ö
+    }
+
+    @Test
     public void parseInsertWithoutNameReference() throws IOException {
         decoder.parseInsertWithoutNameReference(wrap(
                 (byte) 0x44, (byte) 0x65, (byte) 0x74, (byte) 0x61, (byte) 0x67,
