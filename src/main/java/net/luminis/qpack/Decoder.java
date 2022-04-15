@@ -1,5 +1,6 @@
 package net.luminis.qpack;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PushbackInputStream;
@@ -79,7 +80,7 @@ public class Decoder {
 
     // https://tools.ietf.org/html/draft-ietf-quic-qpack-07#section-4.3.1
     void parseInsertWithNameReference(PushbackInputStream inputStream) throws IOException {
-        int first = inputStream.read();
+        byte first = read(inputStream);
         inputStream.unread(first);
 
         int index = (int) parsePrefixedInteger(6, inputStream);
@@ -104,7 +105,7 @@ public class Decoder {
     //   to 62 bits long."
     long parsePrefixedInteger(int prefixLength, InputStream input) throws IOException {
         int maxPrefix = (int) (Math.pow(2, prefixLength) - 1);
-        int initialValue = input.read() & maxPrefix;
+        int initialValue = read(input) & maxPrefix;
         if (initialValue < maxPrefix) {
             return initialValue;
         }
@@ -113,7 +114,7 @@ public class Decoder {
         int factor = 0;
         byte next;
         do {
-            next = (byte) input.read();
+            next = read(input);
             value += ((next & 0x7f) << factor);
             factor += 7;
         }
@@ -124,7 +125,7 @@ public class Decoder {
 
     // https://tools.ietf.org/html/draft-ietf-quic-qpack-07#section-4.5.2
     Map.Entry<String, String> parseIndexedHeaderField(PushbackInputStream inputStream) throws IOException {
-        byte first = (byte) inputStream.read();  // TODO: might return -1 becauseof end-of-stream
+        byte first = read(inputStream);
         inputStream.unread(first);
         boolean inStaticTable = (first & 0x40) == 0x40;
         int index = (int) parsePrefixedInteger(6, inputStream);
@@ -140,7 +141,7 @@ public class Decoder {
 
     // https://tools.ietf.org/html/draft-ietf-quic-qpack-07#section-4.5.4
     Map.Entry<String, String> parseLiteralHeaderFieldWithNameReference(PushbackInputStream inputStream) throws IOException {
-        byte first = (byte) inputStream.read();  // TODO: might return -1 becauseof end-of-stream
+        byte first = read((inputStream));
         inputStream.unread(first);
         boolean inStaticTable = (first & 0x10) == 0x10;
         int nameIndex = (int) parsePrefixedInteger(4, inputStream);
@@ -171,12 +172,12 @@ public class Decoder {
     }
 
     private String parseStringValue(PushbackInputStream inputStream) throws IOException {
-        int firstByte = inputStream.read();
+        byte firstByte = read(inputStream);
         inputStream.unread(firstByte);
         boolean huffmanEncoded = (firstByte & 0x80) == 0x80;
         int valueLength = (int) parsePrefixedInteger(7, inputStream);
         byte[] rawValue = new byte[valueLength];
-        inputStream.read(rawValue);  // TODO: might read less when reading from a network stream....
+        readExact(inputStream, rawValue);
         return huffmanEncoded? huffman.decode(rawValue): new String(rawValue, StandardCharsets.ISO_8859_1);
     }
 
@@ -192,13 +193,12 @@ public class Decoder {
             default:
                 throw new NotYetImplementedException("no huffman flag mask for prefix " + prefixLength);
         }
-
-        int firstByte = inputStream.read();
+        byte firstByte = read(inputStream);
         inputStream.unread(firstByte);
         boolean huffmanEncoded = (firstByte & huffmanFlagMask) == huffmanFlagMask;
         int length = (int) parsePrefixedInteger(prefixLength, inputStream);
         byte[] rawBytes = new byte[length];
-        inputStream.read(rawBytes);  // TODO: might read less when reading from a network stream....
+        readExact(inputStream, rawBytes);
         return huffmanEncoded? huffman.decode(rawBytes): new String(rawBytes, StandardCharsets.ISO_8859_1);
     }
 
@@ -206,4 +206,20 @@ public class Decoder {
         dynamicTable.add(new AbstractMap.SimpleEntry<>(name, value));
     }
 
+    private byte read(InputStream stream) throws IOException {
+        int value = stream.read();
+        if (value == -1) {
+            throw new EOFException();
+        }
+        else {
+            return (byte) value;
+        }
+    }
+
+    private void readExact(InputStream stream, byte[] data) throws IOException {
+        int read = stream.readNBytes(data, 0, data.length);
+        if (read != data.length) {
+            throw new EOFException();
+        }
+    }
 }

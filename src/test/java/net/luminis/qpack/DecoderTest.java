@@ -4,11 +4,13 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.ByteArrayInputStream;
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.PushbackInputStream;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 
 public class DecoderTest {
@@ -53,11 +55,39 @@ public class DecoderTest {
     }
 
     @Test
+    public void parseIndexedHeaderFieldShouldThrowWhenStreamEmpty() throws IOException {
+        assertThatThrownBy(
+                () -> decoder.parseIndexedHeaderField(wrap(new byte[0]))
+        ).isInstanceOf(EOFException.class);
+    }
+
+    @Test
+    public void parseIndexedHeaderFieldShouldThrowWhenStreamTruncated() throws IOException {
+        assertThatThrownBy(
+                () -> decoder.parseIndexedHeaderField(wrap((byte) 0xff))
+        ).isInstanceOf(EOFException.class);
+    }
+
+    @Test
     public void parseLiteralHeaderFieldWithNameReferenceStaticTable() throws IOException {
         Map.Entry<String, String> entry = decoder.parseLiteralHeaderFieldWithNameReference(wrap((byte) 0x51, (byte) 0x81, (byte) 0x63));
 
         assertThat(entry.getKey()).isEqualTo(":path");
         assertThat(entry.getValue()).isEqualTo("/");
+    }
+
+    @Test
+    public void parseLiteralHeaderFieldWithNameReferenceShouldThrowWhenStreamEmpty() throws IOException {
+        assertThatThrownBy(
+                () -> decoder.parseLiteralHeaderFieldWithNameReference(wrap(new byte[0]))
+        ).isInstanceOf(EOFException.class);
+    }
+
+    @Test
+    public void parseLiteralHeaderFieldWithNameReferenceShouldThrowWhenStreamTruncated() throws IOException {
+        assertThatThrownBy(
+                () -> decoder.parseLiteralHeaderFieldWithNameReference(wrap((byte) 0x51, (byte) 0x81))
+        ).isInstanceOf(EOFException.class);
     }
 
     @Test
@@ -76,6 +106,22 @@ public class DecoderTest {
 
         assertThat(entry.getKey()).isEqualTo("etag");
         assertThat(entry.getValue()).isEqualTo("HfkU");
+    }
+
+    @Test
+    public void parseLiteralHeaderFieldWithoutNameReferenceShouldThrowWhenStreamEmtpy() throws IOException {
+        assertThatThrownBy(
+                () -> decoder.parseLiteralHeaderFieldWithoutNameReference(wrap(new byte[0]))
+                ).isInstanceOf(EOFException.class);
+    }
+
+    @Test
+    public void parseLiteralHeaderFieldWithoutNameReferenceShouldThrowWhenStreamTruncated() throws IOException {
+        assertThatThrownBy(
+                () -> decoder.parseLiteralHeaderFieldWithoutNameReference(
+                        wrap((byte) 0x24, (byte) 0x65, (byte) 0x74, (byte) 0x61, (byte) 0x67,
+                                (byte) 0x04, (byte) 0x48, (byte) 0x66, (byte) 0x6b)) //, (byte) 0x55))
+                ).isInstanceOf(EOFException.class);
     }
 
     @Test
