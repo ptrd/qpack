@@ -1,6 +1,8 @@
 apply plugin: 'java'
 apply plugin: 'idea'
 apply plugin: 'eclipse'
+apply plugin: 'maven-publish'
+apply plugin: 'signing'
 
 java {
     sourceCompatibility = JavaVersion.VERSION_11
@@ -28,4 +30,67 @@ test {
             println "Results: ${result.resultType} (${result.testCount} tests, ${result.successfulTestCount} successes, ${result.failedTestCount} failures, ${result.skippedTestCount} skipped)"
         }
     }
+}
+
+group = 'net.luminis.networking'
+version = '1.0'
+
+java {
+    withJavadocJar()
+    withSourcesJar()
+}
+
+publishing {
+    publications {
+        library(MavenPublication) {
+            artifactId = 'qpack'
+            from components.java
+            pom {
+                name = 'QPack'
+                description = 'Java implementation of QPack, the Header Compression for HTTP over QUIC as specified by RFC 9204'
+                url = 'https://github.com/ptrd/qpack'
+
+                licenses {
+                    license {
+                        name = 'GNU Lesser General Public License v3'
+                        url = 'https://www.gnu.org/licenses/lgpl-3.0-standalone.html'
+                    }
+                }
+
+                developers {
+                    developer {
+                        id = 'peterd'
+                        name = 'Peter Doornbosch'
+                        email = 'peter.doornbosch@luminis.eu'
+                        organization  = 'Luminis'
+                        organizationUrl = 'https://www.luminis.eu'
+                    }
+                }
+
+                scm {
+                    connection = 'scm:git:git@github.com:ptrd/qpack.git'
+                    developerConnection = 'scm:git:git@github.com:ptrd/qpack.git'
+                    url = 'https://github.com/ptrd/qpack'
+                }
+            }
+        }
+    }
+    repositories {
+        maven {
+            url = "https://oss.sonatype.org/service/local/staging/deploy/maven2/"
+            credentials {
+                username = project.properties.ossrhUsername
+                password = project.properties.ossrhPassword
+            }
+        }
+    }
+}
+
+signing {
+    sign publishing.publications.library
+}
+
+javadoc {
+    options.addStringOption('Xdoclint:none', '-quiet')
+    options.addBooleanOption('html5', true)
 }
