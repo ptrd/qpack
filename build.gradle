@@ -33,7 +33,7 @@ test {
 }
 
 group = 'net.luminis.networking'
-version = '1.0'
+version = '1.0.1'
 
 java {
     withJavadocJar()
@@ -62,8 +62,6 @@ publishing {
                         id = 'peterd'
                         name = 'Peter Doornbosch'
                         email = 'peter.doornbosch@luminis.eu'
-                        organization  = 'Luminis'
-                        organizationUrl = 'https://www.luminis.eu'
                     }
                 }
 
