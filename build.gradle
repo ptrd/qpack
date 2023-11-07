@@ -32,8 +32,8 @@ test {
     }
 }
 
-group = 'net.luminis.networking'
-version = '1.0.1'
+group = 'tech.kwik'
+version = '1.0.2'
 
 java {
     withJavadocJar()
@@ -75,7 +75,7 @@ publishing {
     }
     repositories {
         maven {
-            url = "https://oss.sonatype.org/service/local/staging/deploy/maven2/"
+            url = "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"
             credentials {
                 username = project.properties.ossrhUsername
                 password = project.properties.ossrhPassword
