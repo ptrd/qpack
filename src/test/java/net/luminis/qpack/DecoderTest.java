@@ -15,11 +15,11 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class DecoderTest {
 
-    private Decoder decoder;
+    private DecoderImpl decoder;
 
     @Before
     public void initDecoder() {
-        decoder = new Decoder();
+        decoder = new DecoderImpl();
     }
 
     @Test

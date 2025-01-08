@@ -8,13 +8,13 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 
-public class Decoder {
+public class DecoderImpl {
 
     private final Huffman huffman;
     private final StaticTable staticTable;
     private final List<AbstractMap.Entry<String, String>> dynamicTable;
 
-    public Decoder() {
+    public DecoderImpl() {
         staticTable = new StaticTable();
         huffman = new Huffman();
         dynamicTable = new ArrayList<>();

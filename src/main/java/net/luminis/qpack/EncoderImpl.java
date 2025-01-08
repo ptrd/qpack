@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Map;
 
 
-public class Encoder {
+public class EncoderImpl {
 
     public static final Charset HTTP_HEADER_CHARSET = Charset.forName("US-ASCII");
 
@@ -16,7 +16,7 @@ public class Encoder {
     private final StaticTable staticTable;
     private final List<AbstractMap.Entry<String, String>> dynamicTable;
 
-    public Encoder() {
+    public EncoderImpl() {
         staticTable = new StaticTable();
         huffman = new Huffman();
         dynamicTable = new ArrayList<>();

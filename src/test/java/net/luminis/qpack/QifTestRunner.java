@@ -44,7 +44,7 @@ public class QifTestRunner {
 
     private void parseAndProcessQif(byte[] bytes, PrintWriter out) throws IOException {
         ByteBuffer buffer = ByteBuffer.wrap(bytes);
-        Decoder decoder = new Decoder();
+        DecoderImpl decoder = new DecoderImpl();
 
         while (buffer.remaining() > 0) {
             long streamId = buffer.getLong();

@@ -14,11 +14,11 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class EncoderTest {
 
-    private Encoder encoder;
+    private EncoderImpl encoder;
 
     @Before
     public void initEncoder() {
-        encoder = new Encoder();
+        encoder = new EncoderImpl();
     }
 
     @Test
