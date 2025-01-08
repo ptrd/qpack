@@ -14,13 +14,13 @@ repositories {
 }
 
 dependencies {
-    testImplementation 'org.assertj:assertj-core:3.22.0'
+    testImplementation 'org.assertj:assertj-core:3.24.2'
 
-    // Use JUnit test framework
-    testImplementation 'junit:junit:4.12'
+    testImplementation('org.junit.jupiter:junit-jupiter:5.10.2')
 }
 
 test {
+    useJUnitPlatform()
     testLogging {
         events "passed", "skipped", "failed"
     }

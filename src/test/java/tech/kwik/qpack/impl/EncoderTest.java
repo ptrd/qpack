@@ -18,8 +18,9 @@
  */
 package tech.kwik.qpack.impl;
 
-import org.junit.Before;
-import org.junit.Test;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.nio.ByteBuffer;
 import java.util.AbstractMap;
@@ -34,7 +35,7 @@ public class EncoderTest {
 
     private EncoderImpl encoder;
 
-    @Before
+    @BeforeEach
     public void initEncoder() {
         encoder = new EncoderImpl();
     }

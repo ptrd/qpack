@@ -19,8 +19,10 @@
 package tech.kwik.qpack.impl;
 
 
-import org.junit.BeforeClass;
-import org.junit.Test;
+
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -29,7 +31,7 @@ public class StaticTableTest {
 
     private static StaticTable staticTable;
 
-    @BeforeClass
+    @BeforeAll
     public static void initStaticTable() {
         staticTable = new StaticTable();
     }
