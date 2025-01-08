@@ -8,7 +8,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 
-public class DecoderImpl {
+public class DecoderImpl implements Decoder {
 
     private final Huffman huffman;
     private final StaticTable staticTable;
@@ -42,6 +42,7 @@ public class DecoderImpl {
         }
     }
 
+    @Override
     public List<Map.Entry<String, String>> decodeStream(InputStream inputStream) throws IOException {
         PushbackInputStream pushbackInputStream = new PushbackInputStream(inputStream, 16);
         List<Map.Entry<String, String>> headers = new ArrayList<>();

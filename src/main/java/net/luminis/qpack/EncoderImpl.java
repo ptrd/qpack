@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Map;
 
 
-public class EncoderImpl {
+public class EncoderImpl implements Encoder {
 
     public static final Charset HTTP_HEADER_CHARSET = Charset.forName("US-ASCII");
 
@@ -29,6 +29,7 @@ public class EncoderImpl {
      * @return the created header block. Note that the underlying array will be larger than the number of bytes written in the buffer.
      * Use buffer.limit() to determine how many bytes to use.
      */
+    @Override
     public ByteBuffer compressHeaders(List<Map.Entry<String, String>> headers) {
         int estimatedSize = 10 + headers.stream().mapToInt(entry -> entry.getKey().length() + entry.getValue().length()).sum();
         ByteBuffer buffer = ByteBuffer.allocate(estimatedSize);
