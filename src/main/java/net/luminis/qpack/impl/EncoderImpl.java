@@ -1,4 +1,6 @@
-package net.luminis.qpack;
+package net.luminis.qpack.impl;
+
+import net.luminis.qpack.Encoder;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;

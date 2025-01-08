@@ -1,4 +1,4 @@
-package net.luminis.qpack;
+package net.luminis.qpack.impl;
 
 import org.junit.Test;
 

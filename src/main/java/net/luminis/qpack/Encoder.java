@@ -1,5 +1,7 @@
 package net.luminis.qpack;
 
+import net.luminis.qpack.impl.EncoderImpl;
+
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Map;

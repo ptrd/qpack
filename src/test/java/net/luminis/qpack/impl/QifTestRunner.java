@@ -1,4 +1,4 @@
-package net.luminis.qpack;
+package net.luminis.qpack.impl;
 
 import java.io.*;
 import java.nio.ByteBuffer;

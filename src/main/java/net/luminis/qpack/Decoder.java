@@ -1,5 +1,7 @@
 package net.luminis.qpack;
 
+import net.luminis.qpack.impl.DecoderImpl;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
