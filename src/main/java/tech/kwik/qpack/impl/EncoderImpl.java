@@ -1,6 +1,6 @@
-package net.luminis.qpack.impl;
+package tech.kwik.qpack.impl;
 
-import net.luminis.qpack.Encoder;
+import tech.kwik.qpack.Encoder;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;

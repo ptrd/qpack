@@ -1,6 +1,6 @@
-package net.luminis.qpack.impl;
+package tech.kwik.qpack.impl;
 
-import net.luminis.qpack.Decoder;
+import tech.kwik.qpack.Decoder;
 
 import java.io.EOFException;
 import java.io.IOException;

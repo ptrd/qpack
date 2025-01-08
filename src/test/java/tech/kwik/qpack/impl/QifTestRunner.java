@@ -1,4 +1,4 @@
-package net.luminis.qpack.impl;
+package tech.kwik.qpack.impl;
 
 import java.io.*;
 import java.nio.ByteBuffer;

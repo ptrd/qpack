@@ -1,4 +1,4 @@
-package net.luminis.qpack.impl;
+package tech.kwik.qpack.impl;
 
 
 import org.junit.BeforeClass;

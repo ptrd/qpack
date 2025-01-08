@@ -1,4 +1,4 @@
-package net.luminis.qpack.impl;
+package tech.kwik.qpack.impl;
 
 
 // https://tools.ietf.org/html/draft-ietf-quic-qpack-07#section-3.1
