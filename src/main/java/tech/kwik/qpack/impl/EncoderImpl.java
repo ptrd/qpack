@@ -51,7 +51,9 @@ public class EncoderImpl implements Encoder {
      */
     @Override
     public ByteBuffer compressHeaders(List<Map.Entry<String, String>> headers) {
-        int estimatedSize = 10 + headers.stream().mapToInt(entry -> entry.getKey().length() + entry.getValue().length()).sum();
+        // worst case estimate: 2 bytes for the blockprefix,
+        // and for both strings: 6 bytes for the length (MAX_INT takes 6 bytes in prefixed-int format) + string length
+        int estimatedSize = 2 + headers.stream().mapToInt(entry -> 6 + entry.getKey().length() + 6 + entry.getValue().length()).sum();
         ByteBuffer buffer = ByteBuffer.allocate(estimatedSize);
 
         insertHeaderBlockPrefix(buffer);

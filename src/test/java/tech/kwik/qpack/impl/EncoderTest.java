@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 
 public class EncoderTest {
@@ -36,12 +35,12 @@ public class EncoderTest {
     private EncoderImpl encoder;
 
     @BeforeEach
-    public void initEncoder() {
+    void initEncoder() {
         encoder = new EncoderImpl();
     }
 
     @Test
-    public void encodeIntegerWith5bitPrefix() {
+    void encodeIntegerWith5bitPrefix() {
         // Taken from https://tools.ietf.org/html/rfc7541#appendix-C.1.1
         ByteBuffer buffer = ByteBuffer.allocate(8);
         encoder.insertPrefixedInteger(5, (byte) 0x60, 10, buffer);
@@ -51,7 +50,7 @@ public class EncoderTest {
     }
 
     @Test
-    public void encodePrefixedInteger() {
+    void encodePrefixedInteger() {
         // Taken from https://tools.ietf.org/html/rfc7541#appendix-C.1.2
         ByteBuffer buffer = ByteBuffer.allocate(8);
         encoder.insertPrefixedInteger(5, (byte) 0, 1337, buffer);
@@ -61,7 +60,7 @@ public class EncoderTest {
     }
 
     @Test
-    public void encodeIntegerStartingAtOctetBoundary() {
+    void encodeIntegerStartingAtOctetBoundary() {
         // Taken from https://tools.ietf.org/html/rfc7541#appendix-C.1.3
         ByteBuffer buffer = ByteBuffer.allocate(8);
         encoder.insertPrefixedInteger(8, (byte) 0, 42, buffer);
@@ -71,7 +70,7 @@ public class EncoderTest {
     }
 
     @Test
-    public void compressPseudoHeaders() {
+    void compressPseudoHeaders() {
         List<Map.Entry<String, String>> headers = List.of(
                 new AbstractMap.SimpleEntry<>(":method", "GET"),
                 new AbstractMap.SimpleEntry<>(":scheme", "https"),
@@ -93,7 +92,7 @@ public class EncoderTest {
     }
 
     @Test
-    public void compressIndexedNameWithLiteralValue() {
+    void compressIndexedNameWithLiteralValue() {
         ByteBuffer result = encoder.compressHeaders(List.of(new AbstractMap.SimpleEntry<>(":method", "TRACE")));
 
         byte[] expected = new byte[] {
@@ -113,7 +112,7 @@ public class EncoderTest {
     }
 
     @Test
-    public void compressLiteral() {
+    void compressLiteral() {
         ByteBuffer result = encoder.compressHeaders(List.of(new AbstractMap.SimpleEntry<>("X-Custom-Header", "anyvalue")));
         byte[] expected = new byte[] {
                 0x00,  // Required Insert Count
@@ -126,5 +125,47 @@ public class EncoderTest {
         };
         assertThat(result.array()).startsWith(expected);
         assertThat(result.limit()).isEqualTo(expected.length);
+    }
+
+    @Test
+    void encodeSeventeenHeaders() {
+        List<Map.Entry<String, String>> headers = List.of(
+                new AbstractMap.SimpleEntry<>("X-Header-1", "value1"),
+                new AbstractMap.SimpleEntry<>("X-Header-2", "value2"),
+                new AbstractMap.SimpleEntry<>("X-Header-3", "value3"),
+                new AbstractMap.SimpleEntry<>("X-Header-4", "value4"),
+                new AbstractMap.SimpleEntry<>("X-Header-5", "value5"),
+                new AbstractMap.SimpleEntry<>("X-Header-6", "value6"),
+                new AbstractMap.SimpleEntry<>("X-Header-7", "value7"),
+                new AbstractMap.SimpleEntry<>("X-Header-8", "value8"),
+                new AbstractMap.SimpleEntry<>("X-Header-9", "value9"),
+                new AbstractMap.SimpleEntry<>("X-Header-10", "value10"),
+                new AbstractMap.SimpleEntry<>("X-Header-11", "value11"),
+                new AbstractMap.SimpleEntry<>("X-Header-12", "value12"),
+                new AbstractMap.SimpleEntry<>("X-Header-13", "value13"),
+                new AbstractMap.SimpleEntry<>("X-Header-14", "value14"),
+                new AbstractMap.SimpleEntry<>("X-Header-15", "value15"),
+                new AbstractMap.SimpleEntry<>("X-Header-16", "value16"),
+                new AbstractMap.SimpleEntry<>("X-Header-17", "value17")
+        );
+
+        ByteBuffer result = encoder.compressHeaders(headers);
+        assertThat(result.limit()).isGreaterThan(0);
+    }
+
+    @Test
+    void encodeVeryLongHeaderAndValue() {
+        String longHeader = "X-Header-";
+        for (int i = 0; i < 66000; i++) {
+            longHeader += "x";
+        }
+        String longValue = "value1-";
+        for (int i = 0; i < 66000; i++) {
+            longValue += "x";
+        }
+        List<Map.Entry<String, String>> headers = List.of(new AbstractMap.SimpleEntry<>(longHeader, longValue));
+
+        ByteBuffer result = encoder.compressHeaders(headers);
+        assertThat(result.limit()).isGreaterThan(0);
     }
 }
