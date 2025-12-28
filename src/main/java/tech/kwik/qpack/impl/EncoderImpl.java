@@ -35,8 +35,10 @@ public class EncoderImpl implements Encoder {
     private final Huffman huffman;
     private final StaticTable staticTable;
     private final List<AbstractMap.Entry<String, String>> dynamicTable;
+    private final boolean useHuffmanEncoding;
 
-    public EncoderImpl() {
+    public EncoderImpl(boolean useHuffmanEncoding) {
+        this.useHuffmanEncoding = useHuffmanEncoding;
         staticTable = new StaticTable();
         huffman = new Huffman();
         dynamicTable = new ArrayList<>();
@@ -77,7 +79,7 @@ public class EncoderImpl implements Encoder {
                 insertIndexedHeaderField(index, buffer);
             }
             else {
-                insertLiteralHeaderFieldWithNsmeReference(index, entry.getValue(), buffer);
+                insertLiteralHeaderFieldWithNameReference(index, entry.getValue(), buffer);
             }
         }
         else {
@@ -85,30 +87,51 @@ public class EncoderImpl implements Encoder {
         }
     }
 
-    // https://tools.ietf.org/html/draft-ietf-quic-qpack-07#section-4.5.2
+    // https://www.rfc-editor.org/rfc/rfc9204.html#section-4.5.2
     private void insertIndexedHeaderField(int index, ByteBuffer buffer) {
         insertPrefixedInteger(6, (byte) 0xc0, index, buffer);
     }
 
-    // https://tools.ietf.org/html/draft-ietf-quic-qpack-07#section-4.5.4
-    private void insertLiteralHeaderFieldWithNsmeReference(int index, String value, ByteBuffer buffer) {
+    // https://www.rfc-editor.org/rfc/rfc9204.html#section-4.5.4
+    private void insertLiteralHeaderFieldWithNameReference(int index, String value, ByteBuffer buffer) {
         insertPrefixedInteger(4, (byte) 0x50, index, buffer);
         byte[] valueBytes = value.getBytes(HTTP_HEADER_CHARSET);
-        insertPrefixedInteger(7, (byte) 0x00, valueBytes.length, buffer);
-        buffer.put(valueBytes);
+        if (useHuffmanEncoding) {
+            byte[] encodedBytes = huffman.encode(valueBytes);
+            insertPrefixedInteger(7, (byte) 0x80, encodedBytes.length, buffer);
+            buffer.put(encodedBytes);
+        }
+        else {
+            insertPrefixedInteger(7, (byte) 0x00, valueBytes.length, buffer);
+            buffer.put(valueBytes);
+        }
     }
 
-    // https://tools.ietf.org/html/draft-ietf-quic-qpack-07#section-4.5.6
+    // https://www.rfc-editor.org/rfc/rfc9204.html#section-4.5.6
     private void insertLiteralHeaderFieldWithoutNameReference(Map.Entry<String, String> entry, ByteBuffer buffer) {
         byte[] keyBytes = entry.getKey().getBytes(HTTP_HEADER_CHARSET);
-        insertPrefixedInteger(3,(byte) 0x20, keyBytes.length, buffer);
-        buffer.put(keyBytes);
+        if (useHuffmanEncoding) {
+            byte[] encodedBytes = huffman.encode(keyBytes);
+            insertPrefixedInteger(3, (byte) 0x28, encodedBytes.length, buffer);
+            buffer.put(encodedBytes);
+        }
+        else {
+            insertPrefixedInteger(3, (byte) 0x20, keyBytes.length, buffer);
+            buffer.put(keyBytes);
+        }
         byte[] valueBytes = entry.getValue().getBytes(HTTP_HEADER_CHARSET);
-        insertPrefixedInteger(7, (byte) 0x00, valueBytes.length, buffer);
-        buffer.put(valueBytes);
+        if (useHuffmanEncoding) {
+            byte[] encodedBytes = huffman.encode(valueBytes);
+            insertPrefixedInteger(7, (byte) 0x80, encodedBytes.length, buffer);
+            buffer.put(encodedBytes);
+        }
+        else {
+            insertPrefixedInteger(7, (byte) 0x00, valueBytes.length, buffer);
+            buffer.put(valueBytes);
+        }
     }
 
-    // https://tools.ietf.org/html/draft-ietf-quic-qpack-07#section-4.1.1
+    // https://www.rfc-editor.org/rfc/rfc9204.html#section-4.1.1
     // https://tools.ietf.org/html/rfc7541#section-5.1
     void insertPrefixedInteger(int prefixLength, byte prefix, int value, ByteBuffer buffer) {
         int maxPrefix = (int) (Math.pow(2, prefixLength) - 1);
@@ -126,5 +149,4 @@ public class EncoderImpl implements Encoder {
             buffer.put((byte) remainder);
         }
     }
-
 }

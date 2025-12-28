@@ -29,14 +29,24 @@ public interface Encoder {
     ByteBuffer compressHeaders(List<Map.Entry<String, String>> headers);
 
     interface Builder {
+        Builder useHuffmanEncoding(boolean enabled);
+
         Encoder build();
     }
 
     static Builder newBuilder() {
         return new Builder() {
+            private boolean useHuffmanEncoding = false;
+
+            @Override
+            public Builder useHuffmanEncoding(boolean enabled) {
+                this.useHuffmanEncoding = enabled;
+                return this;
+            }
+
             @Override
             public Encoder build() {
-                return new EncoderImpl();
+                return new EncoderImpl(useHuffmanEncoding);
             }
         };
     }
