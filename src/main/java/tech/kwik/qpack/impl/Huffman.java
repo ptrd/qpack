@@ -21,6 +21,9 @@ package tech.kwik.qpack.impl;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -28,15 +31,17 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 /**
- * Decoder for Huffman code as specified by https://www.rfc-editor.org/rfc/rfc7541.html#appendix-B
+ * Encodes and decodes Huffman code as specified by https://www.rfc-editor.org/rfc/rfc7541.html#appendix-B
  */
 public class Huffman {
 
     private final Decoder decoder;
+    private final Encoder encoder;
 
     public Huffman() {
         List<SymbolCodeEntry> huffmanCode = readHuffmanCodeFromResourceFile();
         decoder = new Decoder(huffmanCode);
+        encoder = new Encoder(huffmanCode);
     }
 
     /**
@@ -46,6 +51,14 @@ public class Huffman {
      */
     public String decode(byte[] bytes) {
         return decoder.decode(bytes);
+    }
+
+    public byte[] encode(String string) {
+        return encode(string.getBytes(StandardCharsets.ISO_8859_1));
+    }
+
+    public byte[] encode(byte[] string) {
+        return encoder.encode(string);
     }
 
     private List<SymbolCodeEntry> readHuffmanCodeFromResourceFile() {
@@ -77,22 +90,29 @@ public class Huffman {
         }
     }
 
+    /*
+     * Represents a row in the Huffman code table as defined by https://datatracker.ietf.org/doc/html/rfc7541#appendix-B.
+     */
     protected static class SymbolCodeEntry {
+        /**  The symbol to be represented.  It is the decimal value of an octet. */
         public int symbol;
+        /** The Huffman code for the symbol represented as a base-2 integer, aligned on the most significant bit (MSB). */
         public String asBits;
-        public int asHex;
+        /** The Huffman code for the symbol, represented as an integer, aligned on the least significant bit (LSB). */
+        public int asInt;
+        /** The number of bits for the code representing the symbol. */
         public int length;
 
-        public SymbolCodeEntry(int symbol, String asBits, int asHex, int length) {
+        public SymbolCodeEntry(int symbol, String asBits, int asInt, int length) {
             this.symbol = symbol;
             this.asBits = asBits;
-            this.asHex = asHex;
+            this.asInt = asInt;
             this.length = length;
         }
     }
 
     /**
-     * Decoder for Huffman code as specified by https://datatracker.ietf.org/doc/html/rfc7541#appendix-B.
+     * Decoder for Huffman code as specified by https://www.rfc-editor.org/rfc/rfc7541.html#appendix-B.
      * The decoding is implemented by nested lookup tables, where each lookup key is 8 bits. As the given Huffman code
      * has a maximum code length of 30 bits, the maximum nesting is 4 levels.
      * For example, the code for '\n' (decimal 10) is |11111111|11111111|11111111|111100, this requires four lookups: the
@@ -223,6 +243,101 @@ public class Huffman {
 
             boolean isSymbol() {
                 return subTable == null;
+            }
+        }
+    }
+
+    /**
+     * Encoder for Huffman code as specified by https://www.rfc-editor.org/rfc/rfc7541.html#appendix-B.
+     * For each byte to encode, the huffman code for the symbol can be simply retrieved from the lookup table,
+     * but assembling the result for all bytes involves a lot of bit shifting, as the code for an individual symbol
+     * mostly has a (bit) length that is not a multiple of 8.
+     */
+    private static class Encoder {
+
+        private final SymbolCodeEntry[] huffmanCode = new SymbolCodeEntry[257];
+
+        public Encoder(List<SymbolCodeEntry> huffmanCode) {
+            huffmanCode.stream().forEach(entry -> {
+                this.huffmanCode[entry.symbol] = entry;
+            });
+        }
+
+        public byte[] encode(byte[] string) {
+            SymbolCodeEntry[] elements = new SymbolCodeEntry[string.length];
+            // Lookup symbol for each byte
+            for (int i = 0; i < string.length; i++) {
+                elements[i] = huffmanCode[Byte.toUnsignedInt(string[i])];
+            }
+            int numberOfBits = Arrays.stream(elements).mapToInt(c -> c.length).sum();
+            int encodingLength = ((numberOfBits - 1) / 8) + 1;
+
+            // Append the symbol codes to buffer, shifting codes to fill up empty (bit) places.
+            ByteBuffer buffer = ByteBuffer.allocate(encodingLength);
+            ByteBuffer intBuffer = ByteBuffer.allocate(4);
+            int emptyBits = 0;  // Number of empty bits (bits at the right not yet written) in the last byte written to buffer
+            for (int i = 0; i < string.length; i++) {
+                SymbolCodeEntry element = elements[i];
+                if (emptyBits > 0) {
+                    byte lastByte = buffer.get(buffer.position() - 1);
+                    int mostSignificantBits;
+                    if (element.length >= emptyBits) {
+                        // Shift code to get the {emptyBits} most significant bits aligned at the right, e.g.
+                        // lastByte = 10001... (3 empty bits); code 110101 shifted by 3 becomes 110 to fill in the empty bits.
+                        // So, shift element.length bytes to the right and then emptyBits to the left; as emptyBits <= element.length...
+                        int shiftAmount = element.length - emptyBits;
+                        mostSignificantBits = element.asInt >> shiftAmount;
+                    }
+                    else {
+                        // Shift code to fill all the emptyBits, e.g.
+                        // lastByte = 01...... (6 empty bits); code 00101 shift by 1 becomes 001010 to fill in the empty bits (except the last)
+                        // So, shift element.length bytes to the right and then emptyBits to the left; as emptyBits > element.length...
+                        int shiftAmount = emptyBits - element.length;
+                        mostSignificantBits = element.asInt << shiftAmount;
+                    }
+                    // Note that lastByte is a byte, so only the LSB of variable mostSignificantBits is used
+                    lastByte |= mostSignificantBits;
+                    buffer.put(buffer.position() - 1, lastByte);
+                }
+                if (element.length > emptyBits) {
+                    // Shift 32 - element.length to the left to make bit pattern left aligned; and emptyBits more because that many bits is already encoded in last byte in buffer
+                    int shift = 32 - (element.length) + emptyBits;
+                    int bits = element.asInt << shift;
+                    intBuffer.putInt(bits);
+                    int byteCount = numberOfBytes(element.length - emptyBits);
+                    for (int j = 0; j < byteCount; j++) {
+                        buffer.put(intBuffer.get(j));
+                    }
+                    intBuffer.clear();
+                    emptyBits = shift % 8;
+                }
+                else {
+                    emptyBits -= element.length;
+                }
+            }
+            if (emptyBits > 0) {
+                // Fill empty bits with EOS, which is all ones; mask with all zeros and emptyBits ones.
+                int mask = ~ (0xffffffff << emptyBits);
+                buffer.put(encodingLength - 1, (byte) (buffer.get(encodingLength - 1) | mask));
+            }
+            return buffer.array();
+        }
+
+        /**
+         * Returns the minimum number of bytes needed to store the given number of bits
+         * @param numberOfBits
+         * @return
+         */
+        private int numberOfBytes(int numberOfBits) {
+            if (numberOfBits < 0) {
+                throw new IllegalArgumentException("numberOfBits cannot be negative");
+            }
+            else {
+                // n:       1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18
+                // n/8:     0  0  0  0  0  0  0  1  1  1  1  1  1  1  1  2  2  2
+                // (n-1)/8: 0  0  0  0  0  0  0  0  1  1  1  1  1  1  1  1  2  2   so: 1 + (n-1)/8 would work
+                // (n+7)/8: 1  1  1  1  1  1  1  1  2  2  2  2  2  2  2  2  2  2   so: (n+7)/8 would work too
+                return (numberOfBits + 7) / 8;
             }
         }
     }

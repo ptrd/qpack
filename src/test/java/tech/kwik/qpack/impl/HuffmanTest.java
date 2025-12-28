@@ -37,7 +37,7 @@ public class HuffmanTest {
         assertThat(code).isNotNull();
         assertThat(code.symbol).isEqualTo(10);
         assertThat(code.asBits).isEqualTo("111111111111111111111111111100");
-        assertThat(code.asHex).isEqualTo(0x3ffffffc);
+        assertThat(code.asInt).isEqualTo(0x3ffffffc);
         assertThat(code.length).isEqualTo(30);
     }
 
@@ -48,7 +48,7 @@ public class HuffmanTest {
         assertThat(code).isNotNull();
         assertThat(code.symbol).isEqualTo(40);
         assertThat(code.asBits).isEqualTo("1111111010");
-        assertThat(code.asHex).isEqualTo(0x3fa);
+        assertThat(code.asInt).isEqualTo(0x3fa);
         assertThat(code.length).isEqualTo(10);
     }
 
@@ -59,7 +59,7 @@ public class HuffmanTest {
         assertThat(code).isNotNull();
         assertThat(code.symbol).isEqualTo(101);
         assertThat(code.asBits).isEqualTo("00101");
-        assertThat(code.asHex).isEqualTo(0x05);
+        assertThat(code.asInt).isEqualTo(0x05);
         assertThat(code.length).isEqualTo(5);
     }
 
@@ -70,7 +70,7 @@ public class HuffmanTest {
         assertThat(code).isNotNull();
         assertThat(code.symbol).isEqualTo(238);
         assertThat(code.asBits).isEqualTo("11111111111111111111101010");
-        assertThat(code.asHex).isEqualTo(0x3ffffea);
+        assertThat(code.asInt).isEqualTo(0x3ffffea);
         assertThat(code.length).isEqualTo(26);
     }
 
@@ -81,7 +81,7 @@ public class HuffmanTest {
         assertThat(code).isNotNull();
         assertThat(code.symbol).isEqualTo(256);
         assertThat(code.asBits).isEqualTo("111111111111111111111111111111");
-        assertThat(code.asHex).isEqualTo(0x3fffffff);
+        assertThat(code.asInt).isEqualTo(0x3fffffff);
         assertThat(code.length).isEqualTo(30);
     }
 
@@ -242,5 +242,51 @@ public class HuffmanTest {
             assertThat(bytes.length).isEqualTo(1);
             assertThat(Byte.toUnsignedInt(bytes[0])).isEqualTo(i);
         }
+    }
+
+    @Test
+    public void encodeOneByteCodes() {
+        assertThat(huffman.encode("4")).isEqualTo(new byte[] { 0b01101011 });        // code length 6
+        assertThat(huffman.encode(":")).isEqualTo(new byte[] { (byte) 0b10111001 }); // code length 7
+        assertThat(huffman.encode(",")).isEqualTo(new byte[] { (byte) 0b11111010 }); // code length 8
+    }
+
+    @Test
+    public void encodeHighValueByte() {
+        assertThat(huffman.encode(new byte[] { (byte) 187} )).isEqualTo(new byte[] { (byte) 0b11111111, (byte) 0b11111111, (byte) 0b10010011 });
+    }
+
+    @Test
+    public void encodeTwoByteCodes() {
+        assertThat(huffman.encode("!")).isEqualTo(new byte[] { (byte) 0b11111110, (byte) 0b00111111 });  // code length 10
+        assertThat(huffman.encode("+")).isEqualTo(new byte[] { (byte) 0b11111111, (byte) 0b01111111 });  // code length 11
+        assertThat(huffman.encode("@")).isEqualTo(new byte[] { (byte) 0b11111111, (byte) 0b11010111 });  // code length 13
+        assertThat(huffman.encode("<")).isEqualTo(new byte[] { (byte) 0b11111111, (byte) 0b11111001 });  // code length 15
+    }
+
+    @Test
+    public void encodeMultiple() {
+        byte[] data = huffman.encode("4@");  // code lengths: 6, 13
+        assertThat(data).isEqualTo(new byte[] { 0b01101011, (byte) 0b11111111, (byte) 0b01011111 });
+    }
+
+    @Test
+    public void encodeMultiple2() {
+        byte[] data = huffman.encode("(1");  // code lengths: 10, 5
+        assertThat(data).isEqualTo(new byte[] { (byte) 0b11111110, (byte) 0b10000011 });
+    }
+
+    @Test
+    public void encodeMultiple3() {
+        byte[] data = huffman.encode("?e!%)26");  // code lengths: 10, 5, 10, 6, 10, 5, 6
+        assertThat(data).isEqualTo(new byte[] { (byte) 0b11111111, (byte) 0b00_00101_1 , (byte) 0b11111100, (byte) 0b0_010101_1,
+                (byte) 0b11111101, (byte) 0b1_00010_01, (byte) 0b1100_1111 });
+    }
+
+    @Test
+    public void encodeAndDecode() {
+        String string = "[krijg\nou^niks! !@#$%^&*() {};':,.<> ~ ` BURP";
+        byte[] data = huffman.encode(string);
+        assertThat(huffman.decode(data)).isEqualTo(string);
     }
 }
