@@ -31,6 +31,61 @@ public class HuffmanTest {
     private Huffman huffman = new Huffman();
 
     @Test
+    public void parseHuffmanCodeFileLine10() {
+        var line = "    ( 10)  |11111111|11111111|11111111|111100      3ffffffc  [30]";
+        var code = huffman.extractSymbolCodeEntry(line);
+        assertThat(code).isNotNull();
+        assertThat(code.symbol).isEqualTo(10);
+        assertThat(code.asBits).isEqualTo("111111111111111111111111111100");
+        assertThat(code.asHex).isEqualTo(0x3ffffffc);
+        assertThat(code.length).isEqualTo(30);
+    }
+
+    @Test
+    public void parseHuffmanCodeFileLine40() {
+        var line = "'(' ( 40)  |11111110|10                                 3fa  [10]";
+        var code = huffman.extractSymbolCodeEntry(line);
+        assertThat(code).isNotNull();
+        assertThat(code.symbol).isEqualTo(40);
+        assertThat(code.asBits).isEqualTo("1111111010");
+        assertThat(code.asHex).isEqualTo(0x3fa);
+        assertThat(code.length).isEqualTo(10);
+    }
+
+    @Test
+    public void parseHuffmanCodeFileLine101() {
+        var line = "'e' (101)  |00101                                         5  [ 5]";
+        var code = huffman.extractSymbolCodeEntry(line);
+        assertThat(code).isNotNull();
+        assertThat(code.symbol).isEqualTo(101);
+        assertThat(code.asBits).isEqualTo("00101");
+        assertThat(code.asHex).isEqualTo(0x05);
+        assertThat(code.length).isEqualTo(5);
+    }
+
+    @Test
+    public void parseHuffmanCodeFileLine238() {
+        var line = "    (238)  |11111111|11111111|11111010|10           3ffffea  [26]";
+        var code = huffman.extractSymbolCodeEntry(line);
+        assertThat(code).isNotNull();
+        assertThat(code.symbol).isEqualTo(238);
+        assertThat(code.asBits).isEqualTo("11111111111111111111101010");
+        assertThat(code.asHex).isEqualTo(0x3ffffea);
+        assertThat(code.length).isEqualTo(26);
+    }
+
+    @Test
+    public void parseHuffmanCodeFileLineEOS() {
+        var line = "EOS (256)  |11111111|11111111|11111111|111111      3fffffff  [30] ";
+        var code = huffman.extractSymbolCodeEntry(line);
+        assertThat(code).isNotNull();
+        assertThat(code.symbol).isEqualTo(256);
+        assertThat(code.asBits).isEqualTo("111111111111111111111111111111");
+        assertThat(code.asHex).isEqualTo(0x3fffffff);
+        assertThat(code.length).isEqualTo(30);
+    }
+
+    @Test
     public void decodeSingleByte() {
         String decoded = huffman.decode(new byte[] { (byte) 0xfc });
 
