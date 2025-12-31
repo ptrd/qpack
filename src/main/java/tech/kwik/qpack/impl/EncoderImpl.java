@@ -39,8 +39,8 @@ public class EncoderImpl implements Encoder {
 
     public EncoderImpl(boolean useHuffmanEncoding) {
         this.useHuffmanEncoding = useHuffmanEncoding;
-        staticTable = new StaticTable();
-        huffman = new Huffman();
+        staticTable = StaticTable.getInstance();
+        huffman = Huffman.getInstance();
         dynamicTable = new ArrayList<>();
     }
 

@@ -38,7 +38,15 @@ public class StaticTable {
     private String[] names = new String[100];
     private String[] values = new String[100];
 
-    StaticTable() {
+    public static StaticTable getInstance() {
+        return Holder.INSTANCE;
+    }
+
+    private static class Holder {
+        private static final StaticTable INSTANCE = new StaticTable();
+    }
+
+    private StaticTable() {
         Pattern empty =        Pattern.compile("\\|\\s+\\|\\s+\\|\\s+\\|");
         Pattern nameOnly =     Pattern.compile("\\|\\s*(\\d+)\\s*" + "\\|\\s*([^\\|]+)\\s*" + "\\|\\s+\\|");
         Pattern nameValue =    Pattern.compile("\\|\\s*(\\d+)\\s*" + "\\|\\s*([^\\|]+)\\s*" + "\\|\\s*([^\\|]+)\\s*\\|");
@@ -121,7 +129,7 @@ public class StaticTable {
 
     public Map.Entry<String, String> lookupNameValue(int index) {
         if (names[index] != null) {
-            return new AbstractMap.SimpleImmutableEntry(names[index], values[index]);
+            return new AbstractMap.SimpleImmutableEntry<String, String>(names[index], values[index]);
         }
         else {
             throw new HttpQPackDecompressionFailedException();

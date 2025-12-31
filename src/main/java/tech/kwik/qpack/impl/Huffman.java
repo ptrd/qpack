@@ -35,10 +35,19 @@ import java.util.stream.IntStream;
  */
 public class Huffman {
 
+    static private volatile Huffman instance = null;
     private final Decoder decoder;
     private final Encoder encoder;
 
-    public Huffman() {
+    public static Huffman getInstance() {
+        return Holder.INSTANCE;
+    }
+
+    private static class Holder {
+        private static final Huffman INSTANCE = new Huffman();
+    }
+
+    private Huffman() {
         List<SymbolCodeEntry> huffmanCode = readHuffmanCodeFromResourceFile();
         decoder = new Decoder(huffmanCode);
         encoder = new Encoder(huffmanCode);

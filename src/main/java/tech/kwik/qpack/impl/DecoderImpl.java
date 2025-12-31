@@ -25,7 +25,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PushbackInputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.AbstractMap;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 
 public class DecoderImpl implements Decoder {
@@ -35,8 +38,8 @@ public class DecoderImpl implements Decoder {
     private final List<AbstractMap.Entry<String, String>> dynamicTable;
 
     public DecoderImpl() {
-        staticTable = new StaticTable();
-        huffman = new Huffman();
+        staticTable = StaticTable.getInstance();
+        huffman = Huffman.getInstance();
         dynamicTable = new ArrayList<>();
     }
 

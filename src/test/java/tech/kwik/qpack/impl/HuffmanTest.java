@@ -24,11 +24,10 @@ import org.junit.jupiter.api.Test;
 import java.nio.charset.StandardCharsets;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.offset;
 
 public class HuffmanTest {
 
-    private Huffman huffman = new Huffman();
+    private Huffman huffman = Huffman.getInstance();
 
     @Test
     public void parseHuffmanCodeFileLine10() {
