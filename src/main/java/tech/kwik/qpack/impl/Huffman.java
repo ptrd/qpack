@@ -104,6 +104,9 @@ public class Huffman {
         public int length;
 
         public SymbolCodeEntry(int symbol, String asBits, int asInt, int length) {
+            if (!(asBits.length() == length)) {
+                throw new IllegalArgumentException("Length of bit string does not match given length");
+            }
             this.symbol = symbol;
             this.asBits = asBits;
             this.asInt = asInt;
