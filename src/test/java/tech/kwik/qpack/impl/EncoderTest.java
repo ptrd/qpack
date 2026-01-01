@@ -181,7 +181,7 @@ public class EncoderTest {
     }
 
     @Test
-    void encodeSeventeenHeaders() {
+    void encodingNumerousHeadersShouldNotCauseBufferOverflow() {
         List<Map.Entry<String, String>> headers = List.of(
                 new AbstractMap.SimpleEntry<>("X-Header-1", "value1"),
                 new AbstractMap.SimpleEntry<>("X-Header-2", "value2"),
@@ -203,7 +203,7 @@ public class EncoderTest {
         );
 
         ByteBuffer result = encoder.compressHeaders(headers);
-        assertThat(result.limit()).isGreaterThan(0);
+        assertThat(result.limit()).isLessThan(result.capacity());
     }
 
     @Test
