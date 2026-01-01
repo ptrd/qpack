@@ -1,7 +1,7 @@
 /*
- * Copyright © 2019, 2020, 2021, 2022, 2023, 2024, 2025 Peter Doornbosch
+ * Copyright © 2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026 Peter Doornbosch
  *
- * This file is part of Flupke, a HTTP3 client Java library
+ * This file is part of Flupke, a HTTP3 Java library.
  *
  * Flupke is free software: you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the
@@ -18,11 +18,17 @@
  */
 package tech.kwik.qpack.impl;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 // Runs decoding tests by processing sample qif files.
 // See https://github.com/qpackers/qifs

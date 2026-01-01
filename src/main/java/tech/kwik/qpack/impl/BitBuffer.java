@@ -1,7 +1,7 @@
 /*
- * Copyright © 2019, 2020, 2021, 2022, 2023, 2024, 2025 Peter Doornbosch
+ * Copyright © 2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026 Peter Doornbosch
  *
- * This file is part of Flupke, a HTTP3 client Java library
+ * This file is part of Flupke, a HTTP3 Java library.
  *
  * Flupke is free software: you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the
