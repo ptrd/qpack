@@ -18,7 +18,6 @@
  */
 package tech.kwik.qpack.impl;
 
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import tech.kwik.qpack.Encoder;
@@ -43,6 +42,7 @@ public class EncoderTest {
         encoderWithHuffman = new EncoderImpl(true);
     }
 
+    //region prefixed integer encoding
     @Test
     void encodeIntegerWith5bitPrefix() {
         // Taken from https://tools.ietf.org/html/rfc7541#appendix-C.1.1
@@ -72,7 +72,9 @@ public class EncoderTest {
         assertThat(buffer.array()).startsWith(0x2a);
         assertThat(buffer.position()).isEqualTo(1);
     }
+    //endregion
 
+    //region compress headers with static table, no huffman encoding
     @Test
     void compressPseudoHeaders() {
         List<Map.Entry<String, String>> headers = List.of(
@@ -80,7 +82,6 @@ public class EncoderTest {
                 new AbstractMap.SimpleEntry<>(":scheme", "https"),
                 new AbstractMap.SimpleEntry<>(":path", "/")
         );
-
 
         byte[] expected = new byte[] {
                 0x00,  // Required Insert Count
@@ -103,7 +104,7 @@ public class EncoderTest {
                 0x00,  // Required Insert Count
                 0x00,  // Delta Base
                 0x5f,  // 0101 1111  (first index of ":method" is 15)
-                0x00,
+                0x00,  // (2nd byte of index 15)
                 0x05,  // value length, no huffman
                 0x54,  // T
                 0x52,  // R
@@ -116,6 +117,24 @@ public class EncoderTest {
     }
 
     @Test
+    void compressLiteral() {
+        ByteBuffer result = encoder.compressHeaders(List.of(new AbstractMap.SimpleEntry<>("X-Custom-Header", "anyvalue")));
+        byte[] expected = new byte[] {
+                0x00,  // Required Insert Count
+                0x00,  // Delta Base
+                0x27,  // 0010 0111 (https://www.rfc-editor.org/rfc/rfc9204.html#section-4.5.6, no huffman, name length 15)
+                0x08,  // (2nd byte of length 15, 15 - 7 = 8)
+                0x58, 0x2d, 0x43, 0x75, 0x73, 0x74, 0x6f, 0x6d, 0x2d, 0x48, 0x65, 0x61, 0x64, 0x65, 0x72, // "X-Custom-Header"
+                0x08, // Length = 8
+                0x61, 0x6e, 0x79, 0x76, 0x61, 0x6c, 0x75, 0x65,  // "anyvalue"
+        };
+        assertThat(result.array()).startsWith(expected);
+        assertThat(result.limit()).isEqualTo(expected.length);
+    }
+    //endregion
+
+    //region compress headers with static table, with huffman encoding
+    @Test
     void compressIndexedNameWithLiteralValueWithHuffmanEncoding() throws IOException {
         ByteBuffer result = encoderWithHuffman.compressHeaders(List.of(new AbstractMap.SimpleEntry<>(":method", "TRACE")));
 
@@ -123,7 +142,7 @@ public class EncoderTest {
                 0x00,  // Required Insert Count
                 0x00,  // Delta Base
                 0x5f,  // 0101 1111  (first index of ":method" is 15)
-                0x00,
+                0x00, // (2nd byte of index 15)
                 (byte) 0x85,  // value length, huffman
                 // TRACE = 1101111 1101101 100001 1011110 1100000
                 //       = 11011111 10110110 00011011 11011000 00 111111
@@ -135,29 +154,13 @@ public class EncoderTest {
     }
 
     @Test
-    void compressLiteral() {
-        ByteBuffer result = encoder.compressHeaders(List.of(new AbstractMap.SimpleEntry<>("X-Custom-Header", "anyvalue")));
-        byte[] expected = new byte[] {
-                0x00,  // Required Insert Count
-                0x00,  // Delta Base
-                0x27,  // 0010 0111
-                0x08,  // Length = 15, 15 - 7 = 8
-                0x58, 0x2d, 0x43, 0x75, 0x73, 0x74, 0x6f, 0x6d, 0x2d, 0x48, 0x65, 0x61, 0x64, 0x65, 0x72, // X-Custom-Header
-                0x08, // Length = 8
-                0x61, 0x6e, 0x79, 0x76, 0x61, 0x6c, 0x75, 0x65,  // anyvalue
-        };
-        assertThat(result.array()).startsWith(expected);
-        assertThat(result.limit()).isEqualTo(expected.length);
-    }
-
-    @Test
     void compressLiteralWithHuffman() {
         ByteBuffer result = encoderWithHuffman.compressHeaders(List.of(new AbstractMap.SimpleEntry<>("X-Custom-Header", "anyvalue")));
         byte[] expected = new byte[] {
                 0x00,  // Required Insert Count
                 0x00,  // Delta Base
-                0x2f,  // 0010 1111,
-                0x04,  // Length = 11, 11 - 7 = 4
+                0x2f,  // 0010 1111 (https://www.rfc-editor.org/rfc/rfc9204.html#section-4.5.6, with huffman, name length 11)
+                0x04,  // (2nd byte of length 11, 11 - 7 = 4)
                 // X-Custom-Header = 11111100 010110 1011110 101101 01000 01001 00111 101001 010110 1100011 00101 00011 100100 00101 101100
                 //                 = 11111100 01011010 11110101 10101000  01001001 11101001  01011011 00011001 01000111  00100001 01101100
                 (byte) 0b11111100, 0b01011010, (byte) 0b11110101, (byte) 0b10101000, 0b01001001, (byte) 0b11101001, 0b01011011, 0b00011001, 0b01000111, 0b00100001, 0b01101100,
@@ -169,7 +172,9 @@ public class EncoderTest {
         assertThat(result.array()).startsWith(expected);
         assertThat(result.limit()).isEqualTo(expected.length);
     }
+    //endregion
 
+    //region encoder settings
     @Test
     void huffmanEncodingCanBeEnabledOrDisabled() throws IOException {
         List<Map.Entry<String, String>> headers = List.of(new AbstractMap.SimpleEntry<>("X-Test-Header", "testvalue"));
@@ -179,7 +184,9 @@ public class EncoderTest {
 
         assertThat(resultWithoutHuffman.limit()).isGreaterThan(resultWithHuffman.limit());
     }
+    //endregion
 
+    //region edge cases
     @Test
     void encodingNumerousHeadersShouldNotCauseBufferOverflow() {
         List<Map.Entry<String, String>> headers = List.of(
@@ -221,4 +228,5 @@ public class EncoderTest {
         ByteBuffer result = encoder.compressHeaders(headers);
         assertThat(result.limit()).isGreaterThan(0);
     }
+    //endregion
 }
