@@ -77,11 +77,10 @@ public class EncoderTest {
     //region compress headers with static table, no huffman encoding
     @Test
     void compressPseudoHeaders() {
-        List<Map.Entry<String, String>> headers = List.of(
-                new AbstractMap.SimpleEntry<>(":method", "GET"),
-                new AbstractMap.SimpleEntry<>(":scheme", "https"),
-                new AbstractMap.SimpleEntry<>(":path", "/")
-        );
+        List<Map.Entry<String, String>> headers = createHeaderList(
+                ":method", "GET",
+                ":scheme", "https",
+                ":path", "/");
 
         byte[] expected = new byte[] {
                 0x00,  // Required Insert Count
@@ -98,7 +97,7 @@ public class EncoderTest {
 
     @Test
     void compressIndexedNameWithLiteralValue() {
-        ByteBuffer result = encoder.compressHeaders(List.of(new AbstractMap.SimpleEntry<>(":method", "TRACE")));
+        ByteBuffer result = encoder.compressHeaders(createHeaderList(":method", "TRACE"));
 
         byte[] expected = new byte[] {
                 0x00,  // Required Insert Count
@@ -118,7 +117,7 @@ public class EncoderTest {
 
     @Test
     void compressLiteral() {
-        ByteBuffer result = encoder.compressHeaders(List.of(new AbstractMap.SimpleEntry<>("X-Custom-Header", "anyvalue")));
+        ByteBuffer result = encoder.compressHeaders(createHeaderList("X-Custom-Header", "anyvalue"));
         byte[] expected = new byte[] {
                 0x00,  // Required Insert Count
                 0x00,  // Delta Base
@@ -136,7 +135,7 @@ public class EncoderTest {
     //region compress headers with static table, with huffman encoding
     @Test
     void compressIndexedNameWithLiteralValueWithHuffmanEncoding() throws IOException {
-        ByteBuffer result = encoderWithHuffman.compressHeaders(List.of(new AbstractMap.SimpleEntry<>(":method", "TRACE")));
+        ByteBuffer result = encoderWithHuffman.compressHeaders(createHeaderList(":method", "TRACE"));
 
         byte[] expected = new byte[] {
                 0x00,  // Required Insert Count
@@ -155,7 +154,7 @@ public class EncoderTest {
 
     @Test
     void compressLiteralWithHuffman() {
-        ByteBuffer result = encoderWithHuffman.compressHeaders(List.of(new AbstractMap.SimpleEntry<>("X-Custom-Header", "anyvalue")));
+        ByteBuffer result = encoderWithHuffman.compressHeaders(createHeaderList("X-Custom-Header", "anyvalue"));
         byte[] expected = new byte[] {
                 0x00,  // Required Insert Count
                 0x00,  // Delta Base
@@ -177,7 +176,7 @@ public class EncoderTest {
     //region encoder settings
     @Test
     void huffmanEncodingCanBeEnabledOrDisabled() throws IOException {
-        List<Map.Entry<String, String>> headers = List.of(new AbstractMap.SimpleEntry<>("X-Test-Header", "testvalue"));
+        List<Map.Entry<String, String>> headers = createHeaderList("X-Test-Header", "testvalue");
 
         ByteBuffer resultWithoutHuffman = Encoder.newBuilder().useHuffmanEncoding(false).build().compressHeaders(headers);
         ByteBuffer resultWithHuffman = Encoder.newBuilder().useHuffmanEncoding(true).build().compressHeaders(headers);
@@ -189,24 +188,24 @@ public class EncoderTest {
     //region edge cases
     @Test
     void encodingNumerousHeadersShouldNotCauseBufferOverflow() {
-        List<Map.Entry<String, String>> headers = List.of(
-                new AbstractMap.SimpleEntry<>("X-Header-1", "value1"),
-                new AbstractMap.SimpleEntry<>("X-Header-2", "value2"),
-                new AbstractMap.SimpleEntry<>("X-Header-3", "value3"),
-                new AbstractMap.SimpleEntry<>("X-Header-4", "value4"),
-                new AbstractMap.SimpleEntry<>("X-Header-5", "value5"),
-                new AbstractMap.SimpleEntry<>("X-Header-6", "value6"),
-                new AbstractMap.SimpleEntry<>("X-Header-7", "value7"),
-                new AbstractMap.SimpleEntry<>("X-Header-8", "value8"),
-                new AbstractMap.SimpleEntry<>("X-Header-9", "value9"),
-                new AbstractMap.SimpleEntry<>("X-Header-10", "value10"),
-                new AbstractMap.SimpleEntry<>("X-Header-11", "value11"),
-                new AbstractMap.SimpleEntry<>("X-Header-12", "value12"),
-                new AbstractMap.SimpleEntry<>("X-Header-13", "value13"),
-                new AbstractMap.SimpleEntry<>("X-Header-14", "value14"),
-                new AbstractMap.SimpleEntry<>("X-Header-15", "value15"),
-                new AbstractMap.SimpleEntry<>("X-Header-16", "value16"),
-                new AbstractMap.SimpleEntry<>("X-Header-17", "value17")
+        List<Map.Entry<String, String>> headers = createHeaderList(
+                "X-Header-1", "value1",
+                "X-Header-2", "value2",
+                "X-Header-3", "value3",
+                "X-Header-4", "value4",
+                "X-Header-5", "value5",
+                "X-Header-6", "value6",
+                "X-Header-7", "value7",
+                "X-Header-8", "value8",
+                "X-Header-9", "value9",
+                "X-Header-10", "value10",
+                "X-Header-11", "value11",
+                "X-Header-12", "value12",
+                "X-Header-13", "value13",
+                "X-Header-14", "value14",
+                "X-Header-15", "value15",
+                "X-Header-16", "value16",
+                "X-Header-17", "value17"
         );
 
         ByteBuffer result = encoder.compressHeaders(headers);
@@ -223,10 +222,23 @@ public class EncoderTest {
         for (int i = 0; i < 66000; i++) {
             longValue += "x";
         }
-        List<Map.Entry<String, String>> headers = List.of(new AbstractMap.SimpleEntry<>(longHeader, longValue));
+        List<Map.Entry<String, String>> headers = createHeaderList(longHeader, longValue);
 
         ByteBuffer result = encoder.compressHeaders(headers);
         assertThat(result.limit()).isGreaterThan(0);
+    }
+    //endregion
+
+    //region helper methods
+    private List<Map.Entry<String, String>> createHeaderList(String... keyValues) {
+        if (keyValues.length % 2 != 0) {
+            throw new IllegalArgumentException("Expected even number of arguments (key-value pairs)");
+        }
+        List<Map.Entry<String, String>> headers = new java.util.ArrayList<>();
+        for (int i = 0; i < keyValues.length; i += 2) {
+            headers.add(new AbstractMap.SimpleEntry<>(keyValues[i], keyValues[i + 1]));
+        }
+        return headers;
     }
     //endregion
 }
