@@ -130,6 +130,25 @@ public class EncoderTest {
         assertThat(result.array()).startsWith(expected);
         assertThat(result.limit()).isEqualTo(expected.length);
     }
+
+    @Test
+    void compressedHeaderListWithStaticTableShouldHaveRequiredInsertCountAndDeltaBaseOfZero() {
+        ByteBuffer result = encoder.compressHeaders(createHeaderList(
+                ":method", "GET",
+                ":path", "/here",
+                "x-test-header", "testvalue",
+                "access-control-allow-method", "get, post, options",
+                "access-control-request-headers", "x-custom-header",
+                "content-security-policie", "typo"));
+
+        byte[] expectedPrefix = new byte[] {
+                0x00,  // Required Insert Count
+                0x00   // Delta Base
+        };
+
+        assertThat(result.array()).startsWith(expectedPrefix);
+        assertThat(result.limit()).isGreaterThan(expectedPrefix.length);
+    }
     //endregion
 
     //region compress headers with static table, with huffman encoding
