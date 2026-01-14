@@ -26,11 +26,31 @@ import java.util.Map;
 
 public interface Encoder {
 
+    /**
+     * Compresses a "field section" (ordered collection of HTTP field lines associated with an HTTP message)
+     * and returns the "series of representations".
+     * See https://www.rfc-editor.org/rfc/rfc9204.html#section-2.1
+     * @param headers  ordered list of field lines (name value pair)
+     * @return   a "series of representations" that can be decoded by a QPACK decoder.
+     *           The buffer must be flipped before reading. The buffer can be larger than the actual data,
+     *           use limit() to determine the size.
+     */
     ByteBuffer compressHeaders(List<Map.Entry<String, String>> headers);
 
     interface Builder {
+
+        /**
+         * Enable or disable Huffman encoding for header names and values.
+         * Default is disabled.
+         * @param enabled true to enable Huffman encoding, false to disable
+         * @return the builder
+         */
         Builder useHuffmanEncoding(boolean enabled);
 
+        /**
+         * Builds the Encoder instance.
+         * @return the Encoder instance
+         */
         Encoder build();
     }
 
