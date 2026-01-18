@@ -111,16 +111,16 @@ public class StaticTableTest {
 
     @Test
     public void testFindByNameAndValueMatchesSingleItem() {
-        assertThat(staticTable.findByNameAndValue("age", "0")).isEqualTo(2);
+        assertThat(staticTable.findByNameAndValue("age", "0").getIndex()).isEqualTo(2);
     }
 
     @Test
     public void testFindByNameAndValueMatchesMultipleNames() {
-        assertThat(staticTable.findByNameAndValue(":method", "OPTIONS")).isEqualTo(19);
+        assertThat(staticTable.findByNameAndValue(":method", "OPTIONS").getIndex()).isEqualTo(19);
     }
 
     @Test
     public void testFindByNameAndValueMatchesNoValue() {
-        assertThat(staticTable.findByNameAndValue(":status", "201")).isEqualTo(24);
+        assertThat(staticTable.findByNameAndValue(":status", "201").getIndex()).isEqualTo(24);
     }
 }

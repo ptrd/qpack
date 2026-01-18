@@ -23,20 +23,21 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.AbstractMap;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-// https://tools.ietf.org/html/draft-ietf-quic-qpack-07#section-3.1
-// "The static table consists of a predefined static list of header
-//   fields, each of which has a fixed index over time."
-// "All entries in the static table have a name and a value.  However,
-//   values can be empty (that is, have a length of 0)."
+// https://www.rfc-editor.org/rfc/rfc9204.html#name-static-table
+// "The static table consists of a predefined list of field lines, each of which has a fixed index over time. (...)
+//  All entries in the static table have a name and a value. However, values can be empty (that is, have a length of 0).
+//  Each entry is identified by a unique index. Note that the QPACK static table is indexed from 0 (...)"
 public class StaticTable {
 
     private String[] names = new String[100];
     private String[] values = new String[100];
+    private final Map<TableEntry, TableEntry> entriesByName = new HashMap<>();
 
     public static StaticTable getInstance() {
         return Holder.INSTANCE;
@@ -96,9 +97,29 @@ public class StaticTable {
 
                 line = reader.readLine();
             }
-        } catch (IOException e) {
+
+            fillTable();
+        }
+        catch (IOException e) {
             // Impossible when library is build correctly.
             throw new RuntimeException("Corrupt library, missing internal resource.");
+        }
+    }
+
+    private void fillTable() {
+        for (int i = 0; i < 100; i++) {
+            if (names[i] != null) {
+                assert values[i] != null;
+                TableEntry entry = new TableEntry(names[i], values[i], i);
+                entriesByName.put(entry, entry);
+            }
+        }
+
+        for (int i = 0; i < 100; i++) {
+            if (!entriesByName.containsKey(new TableEntry(names[i]))) {
+                TableEntry nameOnlyEntry = new TableEntry(names[i], i);
+                entriesByName.put(nameOnlyEntry, nameOnlyEntry);
+            }
         }
     }
 
@@ -110,21 +131,17 @@ public class StaticTable {
         return result;
     }
 
-    public int findByNameAndValue(String name, String value) {
+    public TableEntry findByNameAndValue(String name, String value) {
         Objects.requireNonNull(name);
         Objects.requireNonNull(value);
-        int firstMatch = -1;
-        for (int i = 0; i < names.length; i++) {
-            if (name.equals(names[i])) {
-                if (firstMatch < 0) {
-                    firstMatch = i;
-                }
-                if (value.equals(values[i])) {
-                    return i;
-                }
-            }
+        TableEntry nameAndValueEntry = entriesByName.get(new TableEntry(name, value));
+        if (nameAndValueEntry != null) {
+            return nameAndValueEntry;
         }
-        return firstMatch;
+        else {
+            TableEntry nameOnlyEntry = entriesByName.get(new TableEntry(name));
+            return nameOnlyEntry;
+        }
     }
 
     public Map.Entry<String, String> lookupNameValue(int index) {

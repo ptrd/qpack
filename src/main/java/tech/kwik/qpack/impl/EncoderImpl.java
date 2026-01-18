@@ -73,13 +73,14 @@ public class EncoderImpl implements Encoder {
     }
 
     void compressEntry(Map.Entry<String, String> entry, ByteBuffer buffer) {
-        int index = staticTable.findByNameAndValue(entry.getKey(), entry.getValue());
-        if (index >= 0) {
-            if (staticTable.lookupNameValue(index).getValue().equals(entry.getValue())) {
-                insertIndexedHeaderField(index, buffer);
+        TableEntry tableEntry = staticTable.findByNameAndValue(entry.getKey(), entry.getValue());
+        if (tableEntry != null) {
+            if (! tableEntry.isValueEmpty()) {
+                assert tableEntry.getValue().equals(entry.getValue());
+                insertIndexedHeaderField(tableEntry.getIndex(), buffer);
             }
             else {
-                insertLiteralHeaderFieldWithNameReference(index, entry.getValue(), buffer);
+                insertLiteralHeaderFieldWithNameReference(tableEntry.getIndex(), entry.getValue(), buffer);
             }
         }
         else {
