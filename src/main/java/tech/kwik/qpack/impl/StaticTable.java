@@ -22,7 +22,6 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.AbstractMap;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -35,9 +34,9 @@ import java.util.regex.Pattern;
 //  Each entry is identified by a unique index. Note that the QPACK static table is indexed from 0 (...)"
 public class StaticTable {
 
-    private String[] names = new String[100];
-    private String[] values = new String[100];
+    public static final int MAX_TABLE_SIZE = 100;
     private final Map<TableEntry, TableEntry> entriesByName = new HashMap<>();
+    private final TableEntry[] entriesByIndex = new TableEntry[MAX_TABLE_SIZE];
 
     public static StaticTable getInstance() {
         return Holder.INSTANCE;
@@ -52,6 +51,9 @@ public class StaticTable {
         Pattern nameOnly =     Pattern.compile("\\|\\s*(\\d+)\\s*" + "\\|\\s*([^\\|]+)\\s*" + "\\|\\s+\\|");
         Pattern nameValue =    Pattern.compile("\\|\\s*(\\d+)\\s*" + "\\|\\s*([^\\|]+)\\s*" + "\\|\\s*([^\\|]+)\\s*\\|");
         Pattern continuation = Pattern.compile("\\|\\s+"           + "\\|\\s*([^\\|]*)\\s*" + "\\|\\s*([^\\|]*)\\s*\\|");
+
+        String[] names = new String[MAX_TABLE_SIZE];
+        String[] values = new String[MAX_TABLE_SIZE];
 
         try {
             InputStream resourceAsStream = this.getClass().getResourceAsStream("statictable.txt");
@@ -98,7 +100,7 @@ public class StaticTable {
                 line = reader.readLine();
             }
 
-            fillTable();
+            fillTable(names, values);
         }
         catch (IOException e) {
             // Impossible when library is build correctly.
@@ -106,12 +108,13 @@ public class StaticTable {
         }
     }
 
-    private void fillTable() {
+    private void fillTable(String[] names, String[] values) {
         for (int i = 0; i < 100; i++) {
             if (names[i] != null) {
                 assert values[i] != null;
                 TableEntry entry = new TableEntry(names[i], values[i], i);
                 entriesByName.put(entry, entry);
+                entriesByIndex[i] = entry;
             }
         }
 
@@ -124,11 +127,11 @@ public class StaticTable {
     }
 
     public String lookupName(int index) {
-        String result = names[index];
+        TableEntry result = entriesByIndex[index];
         if (result == null) {
             throw new HttpQPackDecompressionFailedException();
         }
-        return result;
+        return result.getKey();
     }
 
     public TableEntry findByNameAndValue(String name, String value) {
@@ -145,8 +148,8 @@ public class StaticTable {
     }
 
     public Map.Entry<String, String> lookupNameValue(int index) {
-        if (names[index] != null) {
-            return new AbstractMap.SimpleImmutableEntry<String, String>(names[index], values[index]);
+        if (entriesByIndex[index] != null) {
+            return entriesByIndex[index];
         }
         else {
             throw new HttpQPackDecompressionFailedException();

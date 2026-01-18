@@ -162,7 +162,6 @@ public class DecoderImpl implements Decoder {
         }
     }
 
-
     // https://tools.ietf.org/html/draft-ietf-quic-qpack-07#section-4.5.4
     Map.Entry<String, String> parseLiteralHeaderFieldWithNameReference(PushbackInputStream inputStream) throws IOException {
         byte first = read((inputStream));
