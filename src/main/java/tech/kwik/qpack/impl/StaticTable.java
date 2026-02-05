@@ -37,6 +37,12 @@ import java.util.regex.Pattern;
 public class StaticTable {
 
     public static final int MAX_TABLE_SIZE = 99;
+
+    private static Pattern empty =        Pattern.compile("\\|\\s+\\|\\s+\\|\\s+\\|");
+    private static Pattern nameOnly =     Pattern.compile("\\|\\s*(\\d+)\\s*" + "\\|\\s*([^\\|]+)\\s*" + "\\|\\s+\\|");
+    private static Pattern nameValue =    Pattern.compile("\\|\\s*(\\d+)\\s*" + "\\|\\s*([^\\|]+)\\s*" + "\\|\\s*([^\\|]+)\\s*\\|");
+    private static Pattern continuation = Pattern.compile("\\|\\s+"           + "\\|\\s*([^\\|]*)\\s*" + "\\|\\s*([^\\|]*)\\s*\\|");
+
     private final Map<TableEntry, TableEntry> entriesByName = new HashMap<>();
     private final TableEntry[] entriesByIndex = new TableEntry[MAX_TABLE_SIZE];
 
@@ -49,11 +55,10 @@ public class StaticTable {
     }
 
     private StaticTable() {
-        Pattern empty =        Pattern.compile("\\|\\s+\\|\\s+\\|\\s+\\|");
-        Pattern nameOnly =     Pattern.compile("\\|\\s*(\\d+)\\s*" + "\\|\\s*([^\\|]+)\\s*" + "\\|\\s+\\|");
-        Pattern nameValue =    Pattern.compile("\\|\\s*(\\d+)\\s*" + "\\|\\s*([^\\|]+)\\s*" + "\\|\\s*([^\\|]+)\\s*\\|");
-        Pattern continuation = Pattern.compile("\\|\\s+"           + "\\|\\s*([^\\|]*)\\s*" + "\\|\\s*([^\\|]*)\\s*\\|");
+        loadTable();
+    }
 
+    private void loadTable() {
         String[] names = new String[MAX_TABLE_SIZE];
         String[] values = new String[MAX_TABLE_SIZE];
 
