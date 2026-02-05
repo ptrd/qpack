@@ -129,6 +129,9 @@ public class StaticTable {
     }
 
     public String lookupName(int index) {
+        if (index < 0 || index >= MAX_TABLE_SIZE) {
+            throw new HttpQPackDecompressionFailedException();
+        }
         TableEntry result = entriesByIndex[index];
         if (result == null) {
             throw new HttpQPackDecompressionFailedException();
@@ -150,6 +153,9 @@ public class StaticTable {
     }
 
     public Map.Entry<String, String> lookupNameValue(int index) {
+        if (index < 0 || index >= MAX_TABLE_SIZE) {
+            throw new HttpQPackDecompressionFailedException();
+        }
         if (entriesByIndex[index] != null) {
             return entriesByIndex[index];
         }
