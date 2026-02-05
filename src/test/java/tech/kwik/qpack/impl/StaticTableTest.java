@@ -123,4 +123,9 @@ public class StaticTableTest {
     public void testFindByNameAndValueMatchesNoValue() {
         assertThat(staticTable.findByNameAndValue(":status", "201").getIndex()).isEqualTo(24);
     }
+
+    @Test
+    void testFindByNameAndNoValueReturnsSmallestIndexThatMatchesName() {
+        assertThat(staticTable.findByNameAndValue(":status", "").getIndex()).isEqualTo(24);
+    }
 }
