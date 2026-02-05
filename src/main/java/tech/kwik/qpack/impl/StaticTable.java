@@ -28,13 +28,15 @@ import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-// https://www.rfc-editor.org/rfc/rfc9204.html#name-static-table
-// "The static table consists of a predefined list of field lines, each of which has a fixed index over time. (...)
-//  All entries in the static table have a name and a value. However, values can be empty (that is, have a length of 0).
-//  Each entry is identified by a unique index. Note that the QPACK static table is indexed from 0 (...)"
+/**
+ * https://www.rfc-editor.org/rfc/rfc9204.html#section-3.1
+ * "The static table consists of a predefined list of field lines, each of which has a fixed index over time. (...)
+ *  All entries in the static table have a name and a value. However, values can be empty (that is, have a length of 0).
+ *  Each entry is identified by a unique index. Note that the QPACK static table is indexed from 0 (...)"
+ */
 public class StaticTable {
 
-    public static final int MAX_TABLE_SIZE = 100;
+    public static final int MAX_TABLE_SIZE = 99;
     private final Map<TableEntry, TableEntry> entriesByName = new HashMap<>();
     private final TableEntry[] entriesByIndex = new TableEntry[MAX_TABLE_SIZE];
 
@@ -109,7 +111,7 @@ public class StaticTable {
     }
 
     private void fillTable(String[] names, String[] values) {
-        for (int i = 0; i < 100; i++) {
+        for (int i = 0; i < MAX_TABLE_SIZE; i++) {
             if (names[i] != null) {
                 assert values[i] != null;
                 TableEntry entry = new TableEntry(names[i], values[i], i);
@@ -118,7 +120,7 @@ public class StaticTable {
             }
         }
 
-        for (int i = 0; i < 100; i++) {
+        for (int i = 0; i < MAX_TABLE_SIZE; i++) {
             if (!entriesByName.containsKey(new TableEntry(names[i]))) {
                 TableEntry nameOnlyEntry = new TableEntry(names[i], i);
                 entriesByName.put(nameOnlyEntry, nameOnlyEntry);
