@@ -42,38 +42,6 @@ public class EncoderTest {
         encoderWithHuffman = new EncoderImpl(true);
     }
 
-    //region prefixed integer encoding
-    @Test
-    void encodeIntegerWith5bitPrefix() {
-        // Taken from https://tools.ietf.org/html/rfc7541#appendix-C.1.1
-        ByteBuffer buffer = ByteBuffer.allocate(8);
-        encoder.insertPrefixedInteger(5, (byte) 0x60, 10, buffer);
-
-        assertThat(buffer.array()).startsWith(0x6a);
-        assertThat(buffer.position()).isEqualTo(1);
-    }
-
-    @Test
-    void encodePrefixedInteger() {
-        // Taken from https://tools.ietf.org/html/rfc7541#appendix-C.1.2
-        ByteBuffer buffer = ByteBuffer.allocate(8);
-        encoder.insertPrefixedInteger(5, (byte) 0, 1337, buffer);
-
-        assertThat(buffer.array()).startsWith(0x1f, 0x9a, 0x0a);
-        assertThat(buffer.position()).isEqualTo(3);
-    }
-
-    @Test
-    void encodeIntegerStartingAtOctetBoundary() {
-        // Taken from https://tools.ietf.org/html/rfc7541#appendix-C.1.3
-        ByteBuffer buffer = ByteBuffer.allocate(8);
-        encoder.insertPrefixedInteger(8, (byte) 0, 42, buffer);
-
-        assertThat(buffer.array()).startsWith(0x2a);
-        assertThat(buffer.position()).isEqualTo(1);
-    }
-    //endregion
-
     //region compress headers with static table, no huffman encoding
     @Test
     void compressPseudoHeaders() {

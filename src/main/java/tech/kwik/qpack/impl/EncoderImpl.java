@@ -27,6 +27,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import static tech.kwik.qpack.impl.PrefixedInteger.insertPrefixedInteger;
+
 
 public class EncoderImpl implements Encoder {
 
@@ -132,22 +134,4 @@ public class EncoderImpl implements Encoder {
         }
     }
 
-    // https://www.rfc-editor.org/rfc/rfc9204.html#section-4.1.1
-    // https://tools.ietf.org/html/rfc7541#section-5.1
-    void insertPrefixedInteger(int prefixLength, byte prefix, int value, ByteBuffer buffer) {
-        int maxPrefix = (int) (Math.pow(2, prefixLength) - 1);
-        if (value < maxPrefix) {
-            buffer.put((byte) (prefix | value));
-        }
-        else {
-            buffer.put((byte) (prefix | maxPrefix));
-            int remainder = value - maxPrefix;
-            while (remainder > 128) {
-                byte next = (byte) ((remainder % 128) | 0x80);
-                buffer.put(next);
-                remainder = remainder / 128;
-            }
-            buffer.put((byte) remainder);
-        }
-    }
 }

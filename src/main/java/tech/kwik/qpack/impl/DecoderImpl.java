@@ -30,6 +30,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import static tech.kwik.qpack.impl.PrefixedInteger.parsePrefixedInteger;
+
 
 public class DecoderImpl implements Decoder {
 
@@ -122,31 +124,6 @@ public class DecoderImpl implements Decoder {
         addToTable(name, value);
     }
 
-    // https://tools.ietf.org/html/draft-ietf-quic-qpack-07#section-4.1.1
-    // "The prefixed integer from Section 5.1 of [RFC7541] is used heavily
-    //   throughout this document.  The format from [RFC7541] is used
-    //   unmodified.  QPACK implementations MUST be able to decode integers up
-    //   to 62 bits long."
-    long parsePrefixedInteger(int prefixLength, InputStream input) throws IOException {
-        int maxPrefix = (int) (Math.pow(2, prefixLength) - 1);
-        int initialValue = read(input) & maxPrefix;
-        if (initialValue < maxPrefix) {
-            return initialValue;
-        }
-
-        long value = initialValue;
-        int factor = 0;
-        byte next;
-        do {
-            next = read(input);
-            value += ((next & 0x7f) << factor);
-            factor += 7;
-        }
-        while ((next & 0x80) == 0x80);
-
-        return value;
-    }
-
     // https://tools.ietf.org/html/draft-ietf-quic-qpack-07#section-4.5.2
     Map.Entry<String, String> parseIndexedHeaderField(PushbackInputStream inputStream) throws IOException {
         byte first = read(inputStream);
@@ -229,7 +206,7 @@ public class DecoderImpl implements Decoder {
         dynamicTable.add(new AbstractMap.SimpleEntry<>(name, value));
     }
 
-    private byte read(InputStream stream) throws IOException {
+    static private byte read(InputStream stream) throws IOException {
         int value = stream.read();
         if (value == -1) {
             throw new EOFException();
